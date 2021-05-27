@@ -11,6 +11,8 @@ class OptixManager {
   void initOptix();
   void createContext();
   void createModule();
+  void createProgramGroup();
+  void createPipeline();
 
  protected:
   CUcontext      _cudaContext;
@@ -19,10 +21,12 @@ class OptixManager {
 
   OptixDeviceContext _optixContext;
 
-  OptixPipeline               _pipeline;
-  OptixPipelineCompileOptions _pipelineCompileOptions = {};
-  OptixPipelineLinkOptions    _pipelineLinkOptions    = {};
-
-  OptixModule               _module;
+  OptixModule               _module               = nullptr;
   OptixModuleCompileOptions _moduleCompileOptions = {};
+
+  OptixProgramGroup _raygenProgramGroup = nullptr;
+  OptixProgramGroup _missProgramGroup   = nullptr;
+
+  OptixPipeline               _pipeline               = nullptr;
+  OptixPipelineCompileOptions _pipelineCompileOptions = {};
 };
