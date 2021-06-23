@@ -2,20 +2,19 @@
 
 #include <cuda_runtime.h>
 #include <optix.h>
-#include <optix_stubs.h>
-#include <optix_function_table_definition.h>
 #include <sstream>
 #include <stdexcept>
 #include <format>
+#include <iostream>
 
 #define CUDA_CHECK(call)                                     \
   {                                                          \
     cudaError_t rc = call;                                   \
     if (rc != cudaSuccess) {                                 \
-      cudaError_t err = rc; /*cudaGetLastError();*/          \
+      cudaError_t error = rc; /*cudaGetLastError();*/        \
       std::cerr << std::format("CUDA error {} ({}) ({}:{})", \
-                               cudaGetErrorName(err),        \
-                               cudaGetErrorString(err),      \
+                               cudaGetErrorName(error),      \
+                               cudaGetErrorString(error),    \
                                __FILE__,                     \
                                __LINE__)                     \
                 << std::endl;                                \
@@ -28,8 +27,8 @@
     cudaError_t error = cudaGetLastError();                       \
     if (error != cudaSuccess) {                                   \
       std::cerr << std::format("CUDA sync error {} ({}) ({}:{})", \
-                               cudaGetErrorName(err),             \
-                               cudaGetErrorString(err),           \
+                               cudaGetErrorName(error),           \
+                               cudaGetErrorString(error),         \
                                __FILE__,                          \
                                __LINE__)                          \
                 << std::endl;                                     \

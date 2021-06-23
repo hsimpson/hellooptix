@@ -12,6 +12,14 @@
   "editor.tabSize": 2,
   "files.associations": {
     "*.fx": "glsl",
-    "format": "cpp"
+    "format": "cpp",
+    "deque": "cpp",
+    "forward_list": "cpp",
+    "list": "cpp",
+    "vector": "cpp",
+    "xstring": "cpp",
+    "string": "cpp",
+    "xlocale": "cpp",
+    "__locale": "cpp"
   }
 }

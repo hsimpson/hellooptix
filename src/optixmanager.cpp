@@ -4,6 +4,15 @@
 #include <iostream>
 #include "program.h"
 #include <optix_stack_size.h>
+#include "optixtypes.h"
+#include <optix_stubs.h>
+#include <optix_function_table_definition.h>
+#include <sstream>
+#include <format>
+#include <fstream>
+
+const int32_t _WIDTH  = 512;
+const int32_t _HEIGHT = 512;
 
 OptixManager::OptixManager() {
   initOptix();
@@ -11,6 +20,22 @@ OptixManager::OptixManager() {
   createModule();
   createProgramGroup();
   createPipeline();
+  createShaderBindingTable();
+  launch();
+}
+
+OptixManager::~OptixManager() {
+  delete _outputBuffer;
+
+  CUDA_CHECK(cudaFree(reinterpret_cast<void*>(_shaderBindingTable.raygenRecord)));
+  CUDA_CHECK(cudaFree(reinterpret_cast<void*>(_shaderBindingTable.missRecordBase)));
+
+  OPTIX_CHECK(optixPipelineDestroy(_pipeline));
+  OPTIX_CHECK(optixProgramGroupDestroy(_missProgramGroup));
+  OPTIX_CHECK(optixProgramGroupDestroy(_raygenProgramGroup));
+
+  OPTIX_CHECK(optixModuleDestroy(_module));
+  OPTIX_CHECK(optixDeviceContextDestroy(_optixContext));
 }
 
 void OptixManager::initOptix() {
@@ -48,23 +73,27 @@ void OptixManager::createContext() {
   CUDA_CHECK(cudaSetDevice(deviceID));
   CUDA_CHECK(cudaStreamCreate(&_stream));
 
-  CUDA_CHECK(cudaGetDeviceProperties(&_deviceProps, deviceID));
-  std::cout << "running on device: " << _deviceProps.name << std::endl;
+  cudaDeviceProp deviceProps;
+  CUDA_CHECK(cudaGetDeviceProperties(&deviceProps, deviceID));
+  std::cout << "running on device: " << deviceProps.name << std::endl;
 
-  CUresult cuRes = cuCtxGetCurrent(&_cudaContext);
+  CUcontext cudaContext;
+  CUresult  cuRes = cuCtxGetCurrent(&cudaContext);
   if (cuRes != CUDA_SUCCESS)
     fprintf(stderr, "Error querying current context: error code %d\n", cuRes);
 
-  OPTIX_CHECK(optixDeviceContextCreate(_cudaContext, 0, &_optixContext));
+  OPTIX_CHECK(optixDeviceContextCreate(cudaContext, 0, &_optixContext));
   OPTIX_CHECK(optixDeviceContextSetLogCallback(_optixContext, context_log_cb, nullptr, 4));
 }
 
 void OptixManager::createModule() {
   std::cout << "setting up module ..." << std::endl;
 
-  _moduleCompileOptions.maxRegisterCount = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
-  _moduleCompileOptions.optLevel         = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
-  _moduleCompileOptions.debugLevel       = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
+  OptixModuleCompileOptions moduleCompileOptions = {};
+
+  moduleCompileOptions.maxRegisterCount = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
+  moduleCompileOptions.optLevel         = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
+  moduleCompileOptions.debugLevel       = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
 
   _pipelineCompileOptions                                  = {};
   _pipelineCompileOptions.usesMotionBlur                   = false;
@@ -80,7 +109,7 @@ void OptixManager::createModule() {
   char   log[2048];
   size_t sizeof_log = sizeof(log);
   OPTIX_CHECK(optixModuleCreateFromPTX(_optixContext,
-                                       &_moduleCompileOptions,
+                                       &moduleCompileOptions,
                                        &_pipelineCompileOptions,
                                        ptxCode.c_str(),
                                        ptxCode.size(),
@@ -168,4 +197,83 @@ void OptixManager::createPipeline() {
                                         continuationStackSize,
                                         2  // maxTraversableDepth
                                         ));
+}
+
+void OptixManager::createShaderBindingTable() {
+  CUdeviceptr  raygenRecord;
+  const size_t raygenRecordSize = sizeof(RayGenSbtRecord);
+  CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&raygenRecord), raygenRecordSize));
+  RayGenSbtRecord raygenShaderBindingTableRecord;
+  OPTIX_CHECK(optixSbtRecordPackHeader(_raygenProgramGroup, &raygenShaderBindingTableRecord));
+  raygenShaderBindingTableRecord.data = {0.462f, 0.725f, 0.f};
+  CUDA_CHECK(cudaMemcpy(
+      reinterpret_cast<void*>(raygenRecord),
+      &raygenShaderBindingTableRecord,
+      raygenRecordSize,
+      cudaMemcpyHostToDevice));
+
+  CUdeviceptr  missRecord;
+  const size_t missRecordSize = sizeof(MissSbtRecord);
+  CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&missRecord), missRecordSize));
+  RayGenSbtRecord missShaderBindingTableRecord;
+  OPTIX_CHECK(optixSbtRecordPackHeader(_missProgramGroup, &missShaderBindingTableRecord));
+  CUDA_CHECK(cudaMemcpy(
+      reinterpret_cast<void*>(missRecord),
+      &missShaderBindingTableRecord,
+      missRecordSize,
+      cudaMemcpyHostToDevice));
+
+  _shaderBindingTable.raygenRecord            = raygenRecord;
+  _shaderBindingTable.missRecordBase          = missRecord;
+  _shaderBindingTable.missRecordStrideInBytes = sizeof(MissSbtRecord);
+  _shaderBindingTable.missRecordCount         = 1;
+}
+
+void OptixManager::launch() {
+  _outputBuffer = new CUDAOutputBuffer<uchar4>(CUDAOutputBufferType::CUDA_DEVICE, _WIDTH, _HEIGHT);
+
+  CUstream stream;
+  CUDA_CHECK(cudaStreamCreate(&stream));
+
+  Params params;
+  params.image      = _outputBuffer->map();
+  params.imageWidth = _WIDTH;
+
+  CUdeviceptr dParam;
+  CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&dParam), sizeof(Params)));
+  CUDA_CHECK(cudaMemcpy(
+      reinterpret_cast<void*>(dParam),
+      &params,
+      sizeof(params),
+      cudaMemcpyHostToDevice));
+
+  OPTIX_CHECK(optixLaunch(_pipeline, _stream, dParam, sizeof(Params), &_shaderBindingTable, _WIDTH, _HEIGHT, /*depth=*/1));
+
+  CUDA_SYNC_CHECK();
+  _outputBuffer->unmap();
+}
+
+void OptixManager::writeImage(const std::string& imagePath) {
+  // write the image as PPM
+  auto imageData = _outputBuffer->getHostPointer();
+
+  std::ofstream ofStream(imagePath, std::ios::out);
+  if (ofStream.good()) {
+    // header
+    ofStream << "P3" << std::endl;
+    ofStream << _WIDTH << " " << _HEIGHT << std::endl;
+    ofStream << "255" << std::endl;
+
+    // pixel data
+    for (int32_t i = 0; i < _HEIGHT; i++) {
+      for (int32_t j = 0; j < _WIDTH; j++) {
+        int32_t idx = i * _WIDTH + j;
+        ofStream << std::format("{} {} {}",
+                                imageData[idx].x,
+                                imageData[idx].y,
+                                imageData[idx].z)
+                 << std::endl;
+      }
+    }
+  }
 }
