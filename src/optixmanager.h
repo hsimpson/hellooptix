@@ -3,24 +3,31 @@
 #include <cuda_runtime.h>
 #include <optix.h>
 #include "cudaoutputbuffer.h"
+#include "optixtypes.h"
 
 class OptixManager {
  public:
-  OptixManager();
+  OptixManager(uint32_t width, uint32_t height);
   ~OptixManager();
 
-  void writeImage(const std::string& imagePath);
+  void                      launch();
+  void                      writeImage(const std::string& imagePath);
+  void                      resize(uint32_t width, uint32_t height);
+  CUDAOutputBuffer<uchar4>* getOutputBuffer() {
+    return _outputBuffer;
+  }
 
- protected:
+ private:
   void initOptix();
   void createContext();
   void createModule();
   void createProgramGroup();
   void createPipeline();
   void createShaderBindingTable();
-  void launch();
 
- protected:
+  uint32_t _width  = 0;
+  uint32_t _height = 0;
+
   CUstream _stream;
 
   OptixDeviceContext _optixContext;
@@ -36,4 +43,5 @@ class OptixManager {
   OptixShaderBindingTable _shaderBindingTable = {};
 
   CUDAOutputBuffer<uchar4>* _outputBuffer = nullptr;
+  Params                    _launchParams;
 };

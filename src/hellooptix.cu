@@ -23,16 +23,19 @@ extern "C" __global__ void __raygen__draw_color() {
   uint3       launch_index = optixGetLaunchIndex();
   RayGenData* rtData       = (RayGenData*)optixGetSbtDataPointer();
 
-  float x = (float)launch_index.x;
-  float y = (float)launch_index.y;
+  // float x = (float)launch_index.x;
+  // float y = (float)launch_index.y;
 
-  float r = rand(make_float2(x + 1, y + 1));
-  float g = rand(make_float2(x + 2, y + 2));
-  float b = rand(make_float2(x + 3, y + 3));
+  // float r = rand(make_float2(x + 1, y + 1));
+  // float g = rand(make_float2(x + 2, y + 2));
+  // float b = rand(make_float2(x + 3, y + 3));
+
+  float r = (float)launch_index.x / (float)params.imageWidth;
+  float g = (float)launch_index.y / (float)params.imageHeight;
 
   params.image[launch_index.y * params.imageWidth + launch_index.x] = make_uchar4(
       r * 255u,
       g * 255u,
-      b * 255u,
+      0u,
       255u);
 }

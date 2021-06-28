@@ -1,14 +1,9 @@
-#include "optixmanager.h"
+#include "optixwindow.h"
 #include <iostream>
 
 int main() {
-  try {
-    OptixManager omgr;
-    omgr.writeImage("./image.ppm");
-
-  } catch (std::runtime_error& e) {
-    std::cerr << "Fatal Error: " << e.what() << std::endl;
-  }
+  OptixWindow optixWindow("Hello Optix!", 1024, 1024);
+  optixWindow.run();
 
   return 0;
 }

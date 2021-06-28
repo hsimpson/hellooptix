@@ -3,6 +3,7 @@
 struct Params {
   uchar4*      image;
   unsigned int imageWidth;
+  unsigned int imageHeight;
 };
 
 struct RayGenData {

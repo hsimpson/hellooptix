@@ -29,8 +29,8 @@ class CUDAOutputBuffer {
 
   CUDAOutputBufferType _type;
 
-  int32_t _width  = 0u;
-  int32_t _height = 0u;
+  uint32_t _width  = 0u;
+  uint32_t _height = 0u;
 
   PIXEL_FORMAT*             _devicePixels = nullptr;
   std::vector<PIXEL_FORMAT> _hostPixels;
@@ -120,4 +120,6 @@ PIXEL_FORMAT* CUDAOutputBuffer<PIXEL_FORMAT>::getHostPointer() {
     unmap();
     return _hostPixels.data();
   }
+
+  return nullptr;
 }

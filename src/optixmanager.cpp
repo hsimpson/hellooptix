@@ -4,24 +4,26 @@
 #include <iostream>
 #include "program.h"
 #include <optix_stack_size.h>
-#include "optixtypes.h"
 #include <optix_stubs.h>
 #include <optix_function_table_definition.h>
 #include <sstream>
 #include <format>
 #include <fstream>
 
-const int32_t _WIDTH  = 512;
-const int32_t _HEIGHT = 512;
-
-OptixManager::OptixManager() {
+OptixManager::OptixManager(uint32_t width, uint32_t height)
+    : _width(width), _height(height) {
   initOptix();
   createContext();
   createModule();
   createProgramGroup();
   createPipeline();
   createShaderBindingTable();
-  launch();
+
+  _outputBuffer = new CUDAOutputBuffer<uchar4>(CUDAOutputBufferType::CUDA_DEVICE, _width, _height);
+
+  _launchParams.image       = _outputBuffer->map();
+  _launchParams.imageWidth  = _width;
+  _launchParams.imageHeight = _height;
 }
 
 OptixManager::~OptixManager() {
@@ -230,27 +232,43 @@ void OptixManager::createShaderBindingTable() {
 }
 
 void OptixManager::launch() {
-  _outputBuffer = new CUDAOutputBuffer<uchar4>(CUDAOutputBufferType::CUDA_DEVICE, _WIDTH, _HEIGHT);
-
-  CUstream stream;
-  CUDA_CHECK(cudaStreamCreate(&stream));
-
-  Params params;
-  params.image      = _outputBuffer->map();
-  params.imageWidth = _WIDTH;
+  _launchParams.image = _outputBuffer->map();
 
   CUdeviceptr dParam;
   CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&dParam), sizeof(Params)));
   CUDA_CHECK(cudaMemcpy(
       reinterpret_cast<void*>(dParam),
-      &params,
-      sizeof(params),
+      &_launchParams,
+      sizeof(_launchParams),
       cudaMemcpyHostToDevice));
 
-  OPTIX_CHECK(optixLaunch(_pipeline, _stream, dParam, sizeof(Params), &_shaderBindingTable, _WIDTH, _HEIGHT, /*depth=*/1));
+  OPTIX_CHECK(optixLaunch(
+      _pipeline,
+      _stream,
+      dParam,
+      sizeof(Params),
+      &_shaderBindingTable,
+      _width,
+      _height,
+      /*depth=*/1));
 
   CUDA_SYNC_CHECK();
   _outputBuffer->unmap();
+}
+
+void OptixManager::resize(uint32_t width, uint32_t height) {
+  // minimized
+  if (width == 0 || height == 0) return;
+
+  // noop on no change
+  if (width == _width && height == _height) return;
+
+  _width  = width;
+  _height = height;
+
+  _outputBuffer->resize(_width, _height);
+  _launchParams.imageWidth  = _width;
+  _launchParams.imageHeight = _height;
 }
 
 void OptixManager::writeImage(const std::string& imagePath) {
@@ -261,19 +279,22 @@ void OptixManager::writeImage(const std::string& imagePath) {
   if (ofStream.good()) {
     // header
     ofStream << "P3" << std::endl;
-    ofStream << _WIDTH << " " << _HEIGHT << std::endl;
+    ofStream << _width << " " << _height << std::endl;
     ofStream << "255" << std::endl;
 
     // pixel data
-    for (int32_t i = 0; i < _HEIGHT; i++) {
-      for (int32_t j = 0; j < _WIDTH; j++) {
-        int32_t idx = i * _WIDTH + j;
-        ofStream << std::format("{} {} {}",
-                                imageData[idx].x,
-                                imageData[idx].y,
-                                imageData[idx].z)
-                 << std::endl;
+    std::stringstream ss;
+    // std::string       s;
+    for (int32_t i = _height - 1; i >= 0; --i) {
+      for (int32_t j = 0; j < _width; j++) {
+        int32_t idx = i * _width + j;
+
+        ss << std::to_string(imageData[idx].x) << " "
+           << std::to_string(imageData[idx].y) << " "
+           << std::to_string(imageData[idx].z) << std::endl;
       }
     }
+    ofStream << ss.rdbuf();
+    ofStream.close();
   }
 }
