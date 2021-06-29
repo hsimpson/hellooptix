@@ -19,6 +19,7 @@ add_executable(hellooptix
   ./src/program.cpp
   ./src/glfwindow.cpp
   ./src/optixwindow.cpp
+  ./src/geometry/trianglemesh.cpp
 )
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
