@@ -24,6 +24,23 @@
     "string": "cpp",
     "xlocale": "cpp",
     "__locale": "cpp",
-    "ostream": "cpp"
+    "ostream": "cpp",
+    "algorithm": "cpp",
+    "*.in": "cpp",
+    "array": "cpp",
+    "bitset": "cpp",
+    "initializer_list": "cpp",
+    "stack": "cpp",
+    "type_traits": "cpp",
+    "xhash": "cpp",
+    "xtree": "cpp",
+    "xutility": "cpp",
+    "__hash_table": "cpp",
+    "__split_buffer": "cpp",
+    "__tree": "cpp",
+    "map": "cpp",
+    "string_view": "cpp",
+    "unordered_map": "cpp",
+    "utility": "cpp"
   }
 }

@@ -1,10 +1,13 @@
+#pragma once
+
 #include <vector>
 #include <glm/glm.hpp>
 
 class TriangleMesh {
  public:
   std::vector<glm::vec3>  vertices;
-  std::vector<glm::ivec3> indices;
+  std::vector<glm::uvec3> indices;
+  glm::vec3               color;
 };
 
 class Cube : public TriangleMesh {

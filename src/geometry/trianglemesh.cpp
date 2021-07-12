@@ -16,17 +16,18 @@
 */
 
 Cube::Cube(glm::vec3 size, glm::vec3 center) {
-  glm::vec3 half = size * 0.5f + center;
+  glm::vec3 halfMax = size * 0.5f + center;
+  glm::vec3 halfMin = size * -0.5f + center;
 
-  vertices.push_back({half.x, -half.y, half.z});
-  vertices.push_back({half.x, half.y, half.z});
-  vertices.push_back({-half.x, half.y, half.z});
-  vertices.push_back({-half.x, -half.y, half.z});
+  vertices.push_back({halfMax.x, halfMin.y, halfMax.z});
+  vertices.push_back({halfMax.x, halfMax.y, halfMax.z});
+  vertices.push_back({halfMin.x, halfMax.y, halfMax.z});
+  vertices.push_back({halfMin.x, halfMin.y, halfMax.z});
 
-  vertices.push_back({-half.x, -half.y, -half.z});
-  vertices.push_back({-half.x, half.y, -half.z});
-  vertices.push_back({half.x, half.y, -half.z});
-  vertices.push_back({half.x, -half.y, -half.z});
+  vertices.push_back({halfMin.x, halfMin.y, halfMin.z});
+  vertices.push_back({halfMin.x, halfMax.y, halfMin.z});
+  vertices.push_back({halfMax.x, halfMax.y, halfMin.z});
+  vertices.push_back({halfMax.x, halfMin.y, halfMin.z});
 
   // front
   indices.push_back({0, 1, 2});

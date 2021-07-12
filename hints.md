@@ -5,3 +5,5 @@
 - PTX-size nvrtcGetPTXSize
 - get PTX nvrtcGetPTX
 - destroy program nvrtcDestroyProgram
+
+BLAS = Basic Linear Algebra Subprograms

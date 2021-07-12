@@ -4,11 +4,7 @@
 #include <nvrtc.h>
 #include "program.h"
 #include "nvrtchelpers.h"
-
-// TODO: make this dynamic (environement variable(s))
-#define SAMPLES_ABSOLUTE_INCLUDE_DIRS                          \
-  "C:/ProgramData/NVIDIA Corporation/OptiX SDK 7.3.0/include", \
-      "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3/include",
+#include <config.h>
 
 // NVRTC compiler options
 #define CUDA_NVRTC_OPTIONS \
@@ -20,7 +16,8 @@
       "-default-device",   \
       "-rdc",              \
       "true",              \
-      "-D__x86_64",
+      "-D__x86_64",        \
+      "--device-debug"
 
 Program::Program(std::string filename)
     : _filename(filename) {
@@ -45,17 +42,19 @@ const std::string Program::getPTX() {
 
   // Collect include dirs
   std::vector<std::string> include_dirs;
-  const char*              abs_dirs[] = {SAMPLES_ABSOLUTE_INCLUDE_DIRS};
-  //const char*              rel_dirs[] = {SAMPLES_RELATIVE_INCLUDE_DIRS};
+  const char*              abs_dirs[] = {NVRTC_ABSOLUTE_INCLUDE_DIRS};
+  const char*              rel_dirs[] = {NVRTC_RELATIVE_INCLUDE_DIRS};
 
   for (const char* dir : abs_dirs) {
     include_dirs.push_back(std::string("-I") + dir);
   }
+
   /*
-    for (const char* dir : rel_dirs) {
-      include_dirs.push_back("-I" + base_dir + '/' + dir);
-    }
-    */
+  for (const char* dir : rel_dirs) {
+    include_dirs.push_back("-I" + base_dir + '/' + dir);
+  }
+  */
+
   for (const std::string& dir : include_dirs) {
     options.push_back(dir.c_str());
   }

@@ -10,8 +10,8 @@ project(hellooptix
 # put this in an early stage to work
 set(CMAKE_CXX_STANDARD 20)
 
-include(CTest)
-enable_testing()
+# include(CTest)
+# enable_testing()
 
 add_executable(hellooptix
   ./src/main.cpp
@@ -22,9 +22,9 @@ add_executable(hellooptix
   ./src/geometry/trianglemesh.cpp
 )
 
-set(CPACK_PROJECT_NAME ${PROJECT_NAME})
-set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
-include(CPack)
+# set(CPACK_PROJECT_NAME ${PROJECT_NAME})
+# set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
+# include(CPack)
 
 
 ############
@@ -46,7 +46,7 @@ endif()
   # set_property(TARGET "${TARGET_NAME}" PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 # endif()
 
-message("CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}")
+# message("CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}")
 
 find_package(CUDAToolkit REQUIRED)
 find_package(OptiX REQUIRED)
@@ -56,9 +56,26 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 
 include_directories(
-  ${CUDA_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ${CUDAToolkit_INCLUDE_DIRS}
   ${OptiX_INCLUDE}
 )
+
+find_path(GLM_INCLUDE_DIRS glm/glm.hpp)
+
+# message("OptiX_INSTALL_DIR: ${OptiX_INSTALL_DIR}")
+
+# generate the dynamic include file
+set(NVRTC_RELATIVE_INCLUDE_DIRS "\\
+  \".\", ")
+
+set(NVRTC_ABSOLUTE_INCLUDE_DIRS "\\
+  \"${OptiX_INCLUDE}\", \\
+  \"${OptiX_INSTALL_DIR}/SDK\", \\
+  \"${CUDAToolkit_INCLUDE_DIRS}\", \\
+  \"${GLM_INCLUDE_DIRS}\", ")
+
+configure_file(config.h.in config.h @ONLY)
 
 target_link_libraries( "${TARGET_NAME}"
   CUDA::cudart_static
@@ -67,4 +84,3 @@ target_link_libraries( "${TARGET_NAME}"
   glfw
   glm::glm
 )
-

@@ -1,0 +1,6 @@
+#pragma once
+
+// clang-format off
+#define NVRTC_RELATIVE_INCLUDE_DIRS @NVRTC_RELATIVE_INCLUDE_DIRS@
+#define NVRTC_ABSOLUTE_INCLUDE_DIRS @NVRTC_ABSOLUTE_INCLUDE_DIRS@
+// clang-format on

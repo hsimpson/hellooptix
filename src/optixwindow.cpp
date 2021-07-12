@@ -3,13 +3,18 @@
 #include <iostream>
 #include <format>
 
-OptixWindow::OptixWindow(const std::string& title, uint32_t width, uint32_t height)
+OptixWindow::OptixWindow(const std::string &              title,
+                         const std::vector<TriangleMesh> &meshes,
+                         const Camera &                   camera,
+                         uint32_t                         width,
+                         uint32_t                         height)
     : GLFWindow(title, width, height) {
-  _optixManager = std::make_unique<OptixManager>(width, height);
+  _optixManager = std::make_unique<OptixManager>(meshes, width, height);
+  _optixManager->setCamera(camera);
 }
 
 OptixWindow::~OptixWindow() {
-  _optixManager->writeImage("./image.ppm");
+  //_optixManager->writeImage("./image.ppm");
 }
 
 void OptixWindow::resize(uint32_t width, uint32_t height) {
