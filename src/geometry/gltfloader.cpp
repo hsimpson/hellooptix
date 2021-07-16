@@ -154,6 +154,8 @@ bool GltfLoader::load(const std::string& filename, Model& model) {
 
       { /* handling MATERIALS */
         triangleMesh.textureID = -1;
+        triangleMesh.color     = {0.0f, 0.0f, 1.0f};
+
         if (primitive.material != -1) {
           const auto& material = gltfModel.materials[primitive.material];
 
@@ -164,11 +166,15 @@ bool GltfLoader::load(const std::string& filename, Model& model) {
             // const auto& sampler = gltfModel.samplers[texture.sampler];
 
             triangleMesh.textureID = texture.sampler;
+          } else if (material.pbrMetallicRoughness.baseColorFactor.size() >= 3) {
+            triangleMesh.color = {
+                material.pbrMetallicRoughness.baseColorFactor[0],
+                material.pbrMetallicRoughness.baseColorFactor[1],
+                material.pbrMetallicRoughness.baseColorFactor[2]};
           }
         }
       }
 
-      triangleMesh.color = {0.0f, 0.0f, 1.0f};
       model.meshes.push_back(triangleMesh);
     }
   }

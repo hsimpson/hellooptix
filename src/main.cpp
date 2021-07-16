@@ -21,13 +21,13 @@ int main() {
   // loader.load("./src/assets/models/cube.gltf", model);
   // loader.load("./src/assets/models/monkey.gltf", model);
   // loader.load("./src/assets/models/torus.gltf", model);
-  loader.load("./src/assets/models/Citadell.gltf", model);
+  loader.load("./src/assets/models/normal_tests.gltf", model);
 
   Camera camera = {
-      {45.0f, 30.0f, 10.0f},
-      {0.0f, 20.0f, 0.0f},
+      {0.0f, 0.0f, 10.0f},
+      {0.0f, 0.0f, 0.0f},
       {0.0f, 1.0f, 0.0f},
-      70.0f};
+      30.0f};
 
   OptixWindow optixWindow("Hello Optix!", model, camera, 1920, 1080);
   optixWindow.run();
