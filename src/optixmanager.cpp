@@ -17,10 +17,10 @@ static void contextLogCallback(unsigned int level,
   fprintf(stderr, "[%2d][%12s]: %s\n", (int)level, tag, message);
 }
 
-OptixManager::OptixManager(const std::vector<TriangleMesh>& meshes,
-                           uint32_t                         width,
-                           uint32_t                         height)
-    : _width(width), _height(height), _meshes(meshes) {
+OptixManager::OptixManager(const Model& model,
+                           uint32_t     width,
+                           uint32_t     height)
+    : _width(width), _height(height), _model(model) {
   initOptix();
   createContext();
   createModule();
@@ -29,6 +29,7 @@ OptixManager::OptixManager(const std::vector<TriangleMesh>& meshes,
   createHitProgramGroup();
   buildAccel();
   createPipeline();
+  createTextures();
   createShaderBindingTable();
 
   _outputBuffer = new CUDAOutputBuffer<uchar4>(CUDAOutputBufferType::CUDA_DEVICE, _width, _height);
@@ -113,7 +114,7 @@ void OptixManager::createModule() {
   _pipelineCompileOptions.exceptionFlags                   = OPTIX_EXCEPTION_FLAG_NONE;
   _pipelineCompileOptions.pipelineLaunchParamsVariableName = "optixLaunchParams";
 
-  Program           prg("src/hellooptix.cu");
+  Program           prg("./src/assets/kernels/hellooptix.cu");
   const std::string ptxCode = prg.getPTX();
 
   char   log[2048];
@@ -200,11 +201,14 @@ void OptixManager::createHitProgramGroup() {
 }
 
 void OptixManager::buildAccel() {
+  std::cout << "build acceleration structures ..." << std::endl;
   OptixTraversableHandle asHandle{0};
 
-  size_t meshCount = _meshes.size();
+  size_t meshCount = _model.meshes.size();
 
   _vertexBuffer.resize(meshCount);
+  _normalBuffer.resize(meshCount);
+  _texcoordBuffer.resize(meshCount);
   _indexBuffer.resize(meshCount);
 
   std::vector<OptixBuildInput> triangleInput(meshCount);
@@ -214,9 +218,13 @@ void OptixManager::buildAccel() {
 
   for (int meshID = 0; meshID < meshCount; meshID++) {
     // upload the model to the device: the builder
-    auto& model = _meshes[meshID];
-    _vertexBuffer[meshID].alloc_and_upload(model.vertices);
-    _indexBuffer[meshID].alloc_and_upload(model.indices);
+    auto& mesh = _model.meshes[meshID];
+    _vertexBuffer[meshID].alloc_and_upload(mesh.vertices);
+    _indexBuffer[meshID].alloc_and_upload(mesh.indices);
+    if (!mesh.normals.empty())
+      _normalBuffer[meshID].alloc_and_upload(mesh.normals);
+    if (!mesh.texcoords.empty())
+      _texcoordBuffer[meshID].alloc_and_upload(mesh.texcoords);
 
     d_vertices[meshID] = _vertexBuffer[meshID].d_pointer();
     d_indices[meshID]  = _indexBuffer[meshID].d_pointer();
@@ -225,12 +233,12 @@ void OptixManager::buildAccel() {
     triangleInput[meshID].type                              = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
     triangleInput[meshID].triangleArray.vertexFormat        = OPTIX_VERTEX_FORMAT_FLOAT3;
     triangleInput[meshID].triangleArray.vertexStrideInBytes = sizeof(glm::vec3);
-    triangleInput[meshID].triangleArray.numVertices         = (int)model.vertices.size();
+    triangleInput[meshID].triangleArray.numVertices         = (int)mesh.vertices.size();
     triangleInput[meshID].triangleArray.vertexBuffers       = &d_vertices[meshID];
 
     triangleInput[meshID].triangleArray.indexFormat        = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
     triangleInput[meshID].triangleArray.indexStrideInBytes = sizeof(glm::uvec3);
-    triangleInput[meshID].triangleArray.numIndexTriplets   = (int)model.indices.size();
+    triangleInput[meshID].triangleArray.numIndexTriplets   = (int)mesh.indices.size();
     triangleInput[meshID].triangleArray.indexBuffer        = d_indices[meshID];
 
     triangleInputFlags[meshID] = 0;
@@ -321,7 +329,7 @@ void OptixManager::buildAccel() {
 }
 
 void OptixManager::createPipeline() {
-  std::cout << "create pipeline" << std::endl;
+  std::cout << "create pipeline ..." << std::endl;
 
   const uint32_t                 maxTraceDepth = 2;
   std::vector<OptixProgramGroup> programGroups;
@@ -370,7 +378,61 @@ void OptixManager::createPipeline() {
                                         ));
 }
 
+void OptixManager::createTextures() {
+  std::cout << "create textures ..." << std::endl;
+
+  int numTextures = _model.textures.size();
+  _textureArrays.resize(numTextures);
+  _textureObjects.resize(numTextures);
+
+  for (int textureID = 0; textureID < numTextures; textureID++) {
+    const auto& texture = _model.textures[textureID];
+
+    cudaResourceDesc res_desc = {};
+
+    cudaChannelFormatDesc channel_desc;
+    int32_t               width         = texture.resolution.x;
+    int32_t               height        = texture.resolution.y;
+    int32_t               numComponents = 4;
+    int32_t               pitch         = width * numComponents * sizeof(uint8_t);
+    channel_desc                        = cudaCreateChannelDesc<uchar4>();
+
+    cudaArray_t& pixelArray = _textureArrays[textureID];
+    CUDA_CHECK(cudaMallocArray(&pixelArray,
+                               &channel_desc,
+                               width, height));
+
+    CUDA_CHECK(cudaMemcpy2DToArray(pixelArray,
+                                   /* offset */ 0, 0,
+                                   texture.pixelData.data(),
+                                   pitch, pitch, height,
+                                   cudaMemcpyHostToDevice));
+
+    res_desc.resType         = cudaResourceTypeArray;
+    res_desc.res.array.array = pixelArray;
+
+    cudaTextureDesc tex_desc     = {};
+    tex_desc.addressMode[0]      = cudaAddressModeWrap;
+    tex_desc.addressMode[1]      = cudaAddressModeWrap;
+    tex_desc.filterMode          = cudaFilterModeLinear;
+    tex_desc.readMode            = cudaReadModeNormalizedFloat;
+    tex_desc.normalizedCoords    = 1;
+    tex_desc.maxAnisotropy       = 1;
+    tex_desc.maxMipmapLevelClamp = 99;
+    tex_desc.minMipmapLevelClamp = 0;
+    tex_desc.mipmapFilterMode    = cudaFilterModePoint;
+    tex_desc.borderColor[0]      = 1.0f;
+    tex_desc.sRGB                = 0;
+
+    // Create texture object
+    cudaTextureObject_t cuda_tex = 0;
+    CUDA_CHECK(cudaCreateTextureObject(&cuda_tex, &res_desc, &tex_desc, nullptr));
+    _textureObjects[textureID] = cuda_tex;
+  }
+}
+
 void OptixManager::createShaderBindingTable() {
+  std::cout << "create shader binding table ..." << std::endl;
   // ------------------------------------------------------------------
   // build raygen records
   // ------------------------------------------------------------------
@@ -402,16 +464,26 @@ void OptixManager::createShaderBindingTable() {
   // ------------------------------------------------------------------
   // build hitgroup records
   // ------------------------------------------------------------------
-  int                         numObjects = (int)_meshes.size();
+  int                         numObjects = (int)_model.meshes.size();
   std::vector<HitgroupRecord> hitgroupRecords;
   for (int meshID = 0; meshID < numObjects; meshID++) {
     HitgroupRecord rec;
     // all meshes use the same code, so all same hit group
     OPTIX_CHECK(optixSbtRecordPackHeader(_hitProgramGroups[0], &rec));
-    auto color      = _meshes[meshID].color;
-    rec.data.color  = make_float3(color.r, color.g, color.b);
-    rec.data.vertex = (float3*)_vertexBuffer[meshID].d_pointer();
-    rec.data.index  = (uint3*)_indexBuffer[meshID].d_pointer();
+    auto& mesh        = _model.meshes[meshID];
+    auto  color       = mesh.color;
+    rec.data.color    = make_float3(color.r, color.g, color.b);
+    rec.data.vertex   = (float3*)_vertexBuffer[meshID].d_pointer();
+    rec.data.normal   = (float3*)_normalBuffer[meshID].d_pointer();
+    rec.data.texcoord = (float2*)_texcoordBuffer[meshID].d_pointer();
+    rec.data.index    = (uint3*)_indexBuffer[meshID].d_pointer();
+
+    if (mesh.textureID >= 0) {
+      rec.data.hasTexture = true;
+      rec.data.texture    = _textureObjects[mesh.textureID];
+    } else {
+      rec.data.hasTexture = false;
+    }
     hitgroupRecords.push_back(rec);
   }
   _hitRecordsBuffer.alloc_and_upload(hitgroupRecords);
@@ -431,8 +503,8 @@ void OptixManager::launch() {
       sizeof(_launchParams),
       cudaMemcpyHostToDevice));
 
-  std::cout << "sizeof(_launchParams): " << sizeof(_launchParams) << std::endl;
-  std::cout << "sizeof(Params): " << sizeof(Params) << std::endl;
+  // std::cout << "sizeof(_launchParams): " << sizeof(_launchParams) << std::endl;
+  // std::cout << "sizeof(Params): " << sizeof(Params) << std::endl;
 
   OPTIX_CHECK(optixLaunch(
       _pipeline,
@@ -507,4 +579,21 @@ void OptixManager::setCamera(const Camera& camera) {
 
   _launchParams.camera.horizontal = make_float3(horizontal.x, horizontal.y, horizontal.z);
   _launchParams.camera.vertical   = make_float3(vertical.x, vertical.y, vertical.z);
+}
+
+void OptixManager::zoom(float offset) {
+  _lastSetCamera.from.z += offset;
+  setCamera(_lastSetCamera);
+}
+
+void OptixManager::move(float offsetX, float offsetY) {
+  _lastSetCamera.from.x += offsetX;
+  _lastSetCamera.from.y += offsetY;
+  setCamera(_lastSetCamera);
+}
+
+void OptixManager::moveLookAt(float offsetX, float offsetY) {
+  _lastSetCamera.lookAt.x += offsetX;
+  _lastSetCamera.lookAt.y += offsetY;
+  setCamera(_lastSetCamera);
 }

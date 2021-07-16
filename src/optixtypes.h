@@ -23,7 +23,12 @@ struct RayGenData {
 struct TriangleMeshSBTData {
   float3  color;
   float3 *vertex;
+  float3 *normal;
+  float2 *texcoord;
   uint3 * index;
+
+  bool                hasTexture;
+  cudaTextureObject_t texture;
 };
 
 /*! SBT record for a raygen program */

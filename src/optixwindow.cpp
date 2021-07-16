@@ -3,13 +3,13 @@
 #include <iostream>
 #include <format>
 
-OptixWindow::OptixWindow(const std::string &              title,
-                         const std::vector<TriangleMesh> &meshes,
-                         const Camera &                   camera,
-                         uint32_t                         width,
-                         uint32_t                         height)
+OptixWindow::OptixWindow(const std::string &title,
+                         const Model &      model,
+                         const Camera &     camera,
+                         uint32_t           width,
+                         uint32_t           height)
     : GLFWindow(title, width, height) {
-  _optixManager = std::make_unique<OptixManager>(meshes, width, height);
+  _optixManager = std::make_unique<OptixManager>(model, width, height);
   _optixManager->setCamera(camera);
 }
 
@@ -74,4 +74,16 @@ void OptixWindow::render() {
   auto duration = std::chrono::duration<double, std::chrono::milliseconds::period>(t2 - t1).count();
 
   std::cout << std::format("Optix duration: {}ms\n", duration);
+}
+
+void OptixWindow::zoom(float offset) {
+  _optixManager->zoom(offset);
+}
+
+void OptixWindow::move(float offsetX, float offsetY) {
+  _optixManager->move(offsetX, offsetY);
+}
+
+void OptixWindow::moveLookAt(float offsetX, float offsetY) {
+  _optixManager->moveLookAt(offsetX, offsetY);
 }

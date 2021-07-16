@@ -30,6 +30,9 @@ GLFWindow::GLFWindow(const std::string& title, uint32_t width, uint32_t height)
     glfwTerminate();
     exit(EXIT_FAILURE);
   }
+  glfwSetFramebufferSizeCallback(_handle, GLFWindow::framebufferResizeCallback);
+  glfwSetKeyCallback(_handle, GLFWindow::keyCallback);
+  glfwSetScrollCallback(_handle, GLFWindow::scrollCallback);
 }
 
 GLFWindow::~GLFWindow() {
@@ -38,8 +41,6 @@ GLFWindow::~GLFWindow() {
 }
 
 void GLFWindow::run() {
-  glfwSetFramebufferSizeCallback(_handle, GLFWindow::framebufferResizeCallback);
-
   while (!glfwWindowShouldClose(_handle)) {
     render();
     draw();
@@ -54,4 +55,50 @@ void GLFWindow::framebufferResizeCallback(GLFWwindow* window, int width, int hei
   w->_width  = width;
   w->_height = height;
   w->resize(width, height);
+}
+
+void GLFWindow::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+  auto w = static_cast<GLFWindow*>(glfwGetWindowUserPointer(window));
+
+  float offsetX = 0.0f;
+  float offsetY = 0.0f;
+
+  if (mods == GLFW_MOD_ALT) {
+    switch (key) {
+      case GLFW_KEY_W:
+        offsetY = 1.0f;
+        break;
+      case GLFW_KEY_S:
+        offsetY = -1.0f;
+        break;
+      case GLFW_KEY_A:
+        offsetX = -1.0f;
+        break;
+      case GLFW_KEY_D:
+        offsetX = 1.0f;
+        break;
+    }
+    w->moveLookAt(offsetX, offsetY);
+  } else {
+    switch (key) {
+      case GLFW_KEY_W:
+        offsetY = 1.0f;
+        break;
+      case GLFW_KEY_S:
+        offsetY = -1.0f;
+        break;
+      case GLFW_KEY_A:
+        offsetX = -1.0f;
+        break;
+      case GLFW_KEY_D:
+        offsetX = 1.0f;
+        break;
+    }
+    w->move(offsetX, offsetY);
+  }
+}
+
+void GLFWindow::scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+  auto w = static_cast<GLFWindow*>(glfwGetWindowUserPointer(window));
+  w->zoom(yoffset);
 }

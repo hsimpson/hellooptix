@@ -11,9 +11,9 @@
 
 class OptixManager {
  public:
-  OptixManager(const std::vector<TriangleMesh>& meshes,
-               uint32_t                         width,
-               uint32_t                         height);
+  OptixManager(const Model& model,
+               uint32_t     width,
+               uint32_t     height);
   ~OptixManager();
 
   void                      launch();
@@ -24,6 +24,9 @@ class OptixManager {
   }
 
   void setCamera(const Camera& camera);
+  void zoom(float offset);
+  void move(float offsetX, float offsetY);
+  void moveLookAt(float offsetX, float offsetY);
 
  private:
   void initOptix();
@@ -34,6 +37,7 @@ class OptixManager {
   void createHitProgramGroup();
   void buildAccel();
   void createPipeline();
+  void createTextures();
   void createShaderBindingTable();
 
   uint32_t _width  = 0;
@@ -59,12 +63,19 @@ class OptixManager {
   CUDAOutputBuffer<uchar4>* _outputBuffer = nullptr;
   Params                    _launchParams;
 
-  const std::vector<TriangleMesh>& _meshes;
-  Camera                           _lastSetCamera;
+  const Model& _model;
+  Camera       _lastSetCamera;
+
   // one buffer per input mesh
   std::vector<CUDABuffer> _vertexBuffer;
-  // one buffer per input mesh
+  std::vector<CUDABuffer> _normalBuffer;
+  std::vector<CUDABuffer> _texcoordBuffer;
   std::vector<CUDABuffer> _indexBuffer;
+
   // buffer that keeps the (final, compacted) accel structure
   CUDABuffer _asBuffer;
+
+  // one texture object and pixel array per used texture
+  std::vector<cudaArray_t>         _textureArrays;
+  std::vector<cudaTextureObject_t> _textureObjects;
 };

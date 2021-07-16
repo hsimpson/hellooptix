@@ -20,6 +20,7 @@ add_executable(hellooptix
   ./src/glfwindow.cpp
   ./src/optixwindow.cpp
   ./src/geometry/trianglemesh.cpp
+  ./src/geometry/gltfloader.cpp
 )
 
 # set(CPACK_PROJECT_NAME ${PROJECT_NAME})
@@ -55,6 +56,7 @@ find_package(glad CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 
+
 include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CUDAToolkit_INCLUDE_DIRS}
@@ -62,6 +64,9 @@ include_directories(
 )
 
 find_path(GLM_INCLUDE_DIRS glm/glm.hpp)
+find_path(TINYGLTF_INCLUDE_DIRS "tiny_gltf.h")
+
+#target_include_directories(main PRIVATE ${TINYGLTF_INCLUDE_DIRS})
 
 # message("OptiX_INSTALL_DIR: ${OptiX_INSTALL_DIR}")
 
@@ -73,7 +78,8 @@ set(NVRTC_ABSOLUTE_INCLUDE_DIRS "\\
   \"${OptiX_INCLUDE}\", \\
   \"${OptiX_INSTALL_DIR}/SDK\", \\
   \"${CUDAToolkit_INCLUDE_DIRS}\", \\
-  \"${GLM_INCLUDE_DIRS}\", ")
+  \"${GLM_INCLUDE_DIRS}\", \\
+  \"${CMAKE_SOURCE_DIR}/src\", ")
 
 configure_file(config.h.in config.h @ONLY)
 
