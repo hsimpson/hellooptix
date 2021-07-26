@@ -1,3 +1,4 @@
-build
+build/
+src/assets/models/restricted/
 image.ppm
 *.blend1
