@@ -4,13 +4,12 @@
 #include <format>
 
 OptixWindow::OptixWindow(const std::string &title,
-                         const Model &      model,
-                         const Camera &     camera,
+                         const Scene &      scene,
                          uint32_t           width,
                          uint32_t           height)
     : GLFWindow(title, width, height) {
-  _optixManager = std::make_unique<OptixManager>(model, width, height);
-  _optixManager->setCamera(camera);
+  _optixManager = std::make_unique<OptixManager>(scene, width, height);
+  _optixManager->setCamera(scene.camera);
 }
 
 OptixWindow::~OptixWindow() {
@@ -73,7 +72,7 @@ void OptixWindow::render() {
   auto t2       = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration<double, std::chrono::milliseconds::period>(t2 - t1).count();
 
-  std::cout << std::format("Optix duration: {}ms\n", duration);
+  // std::cout << std::format("Optix duration: {}ms\n", duration);
 }
 
 void OptixWindow::zoom(float offset) {

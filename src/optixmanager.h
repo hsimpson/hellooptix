@@ -11,7 +11,7 @@
 
 class OptixManager {
  public:
-  OptixManager(const Model& model,
+  OptixManager(const Scene& scene,
                uint32_t     width,
                uint32_t     height);
   ~OptixManager();
@@ -23,7 +23,7 @@ class OptixManager {
     return _outputBuffer;
   }
 
-  void setCamera(const Camera& camera);
+  void setCamera(const std::shared_ptr<Camera>& camera);
   void zoom(float offset);
   void move(float offsetX, float offsetY);
   void moveLookAt(float offsetX, float offsetY);
@@ -63,8 +63,8 @@ class OptixManager {
   CUDAOutputBuffer<uchar4>* _outputBuffer = nullptr;
   Params                    _launchParams;
 
-  const Model& _model;
-  Camera       _lastSetCamera;
+  const Scene&            _scene;
+  std::shared_ptr<Camera> _lastSetCamera;
 
   // one buffer per input mesh
   std::vector<CUDABuffer> _vertexBuffer;

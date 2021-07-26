@@ -15,21 +15,25 @@ int main() {
   std::vector<TriangleMesh> meshes = {cube1, cube2};
   */
 
-  Model model;
+  Scene scene;
 
   GltfLoader loader;
-  // loader.load("./src/assets/models/cube.gltf", model);
-  // loader.load("./src/assets/models/monkey.gltf", model);
-  // loader.load("./src/assets/models/torus.gltf", model);
-  loader.load("./src/assets/models/normal_tests.gltf", model);
+  // loader.load("./src/assets/models/cube.gltf", scene);
+  // loader.load("./src/assets/models/monkey.gltf", scene);
+  // loader.load("./src/assets/models/torus.gltf", scene);
+  loader.load("./src/assets/models/scene.gltf", scene);
 
-  Camera camera = {
-      {0.0f, 0.0f, 10.0f},
-      {0.0f, 0.0f, 0.0f},
-      {0.0f, 1.0f, 0.0f},
-      30.0f};
+  if (!scene.camera) {
+    scene.camera = std::make_shared<Camera>(Camera(
+        {2.0f, 4.0f, 4.0f},
+        {0.0f, 0.0f, 0.0f},
+        {0.0f, 1.0f, 0.0f},
+        glm::radians(30.0f)
 
-  OptixWindow optixWindow("Hello Optix!", model, camera, 1920, 1080);
+            ));
+  }
+
+  OptixWindow optixWindow("Hello Optix!", scene, 1920, 1080);
   optixWindow.run();
 
   return 0;

@@ -17,10 +17,10 @@ static void contextLogCallback(unsigned int level,
   fprintf(stderr, "[%2d][%12s]: %s\n", (int)level, tag, message);
 }
 
-OptixManager::OptixManager(const Model& model,
+OptixManager::OptixManager(const Scene& scene,
                            uint32_t     width,
                            uint32_t     height)
-    : _width(width), _height(height), _model(model) {
+    : _width(width), _height(height), _scene(scene) {
   initOptix();
   createContext();
   createModule();
@@ -204,7 +204,7 @@ void OptixManager::buildAccel() {
   std::cout << "build acceleration structures ..." << std::endl;
   OptixTraversableHandle asHandle{0};
 
-  size_t meshCount = _model.meshes.size();
+  size_t meshCount = _scene.meshes.size();
 
   _vertexBuffer.resize(meshCount);
   _normalBuffer.resize(meshCount);
@@ -218,7 +218,7 @@ void OptixManager::buildAccel() {
 
   for (int meshID = 0; meshID < meshCount; meshID++) {
     // upload the model to the device: the builder
-    auto& mesh = _model.meshes[meshID];
+    auto& mesh = _scene.meshes[meshID];
     _vertexBuffer[meshID].alloc_and_upload(mesh.vertices);
     _indexBuffer[meshID].alloc_and_upload(mesh.indices);
     if (!mesh.normals.empty())
@@ -381,12 +381,12 @@ void OptixManager::createPipeline() {
 void OptixManager::createTextures() {
   std::cout << "create textures ..." << std::endl;
 
-  int numTextures = _model.textures.size();
+  int numTextures = _scene.textures.size();
   _textureArrays.resize(numTextures);
   _textureObjects.resize(numTextures);
 
   for (int textureID = 0; textureID < numTextures; textureID++) {
-    const auto& texture = _model.textures[textureID];
+    const auto& texture = _scene.textures[textureID];
 
     cudaResourceDesc res_desc = {};
 
@@ -464,13 +464,13 @@ void OptixManager::createShaderBindingTable() {
   // ------------------------------------------------------------------
   // build hitgroup records
   // ------------------------------------------------------------------
-  int                         numObjects = (int)_model.meshes.size();
+  int                         numObjects = (int)_scene.meshes.size();
   std::vector<HitgroupRecord> hitgroupRecords;
   for (int meshID = 0; meshID < numObjects; meshID++) {
     HitgroupRecord rec;
     // all meshes use the same code, so all same hit group
     OPTIX_CHECK(optixSbtRecordPackHeader(_hitProgramGroups[0], &rec));
-    auto& mesh        = _model.meshes[meshID];
+    auto& mesh        = _scene.meshes[meshID];
     auto  color       = mesh.color;
     rec.data.color    = make_float3(color.r, color.g, color.b);
     rec.data.vertex   = (float3*)_vertexBuffer[meshID].d_pointer();
@@ -564,36 +564,39 @@ void OptixManager::writeImage(const std::string& imagePath) {
   }
 }
 
-void OptixManager::setCamera(const Camera& camera) {
+void OptixManager::setCamera(const std::shared_ptr<Camera>& camera) {
+  std::cout << "OptixManager::setCamera()" << std::endl;
+  std::cout << std::format("from: {}, {}, {}", camera->from.x, camera->from.y, camera->from.z) << std::endl;
+  std::cout << std::format("lookAt: {}, {}, {}", camera->lookAt.x, camera->lookAt.y, camera->lookAt.z) << std::endl;
+
   _lastSetCamera = camera;
 
-  _launchParams.camera.position  = make_float3(camera.from.x, camera.from.y, camera.from.z);
-  auto direction                 = glm::normalize(camera.lookAt - camera.from);
+  _launchParams.camera.position  = make_float3(camera->from.x, camera->from.y, camera->from.z);
+  auto direction                 = glm::normalize(camera->lookAt - camera->from);
   _launchParams.camera.direction = make_float3(direction.x, direction.y, direction.z);
 
-  const float fovyRad = glm::radians(camera.fovY);
-  const float aspect  = float(_launchParams.frame.size.x) / float(_launchParams.frame.size.y);
+  const float aspect = float(_launchParams.frame.size.x) / float(_launchParams.frame.size.y);
 
-  auto horizontal = fovyRad * aspect * glm::normalize(glm::cross(direction, camera.up));
-  auto vertical   = fovyRad * glm::normalize(glm::cross(horizontal, direction));
+  auto horizontal = camera->fovY * aspect * glm::normalize(glm::cross(direction, camera->up));
+  auto vertical   = camera->fovY * glm::normalize(glm::cross(horizontal, direction));
 
   _launchParams.camera.horizontal = make_float3(horizontal.x, horizontal.y, horizontal.z);
   _launchParams.camera.vertical   = make_float3(vertical.x, vertical.y, vertical.z);
 }
 
 void OptixManager::zoom(float offset) {
-  _lastSetCamera.from.z += offset;
+  _lastSetCamera->from.z += offset;
   setCamera(_lastSetCamera);
 }
 
 void OptixManager::move(float offsetX, float offsetY) {
-  _lastSetCamera.from.x += offsetX;
-  _lastSetCamera.from.y += offsetY;
+  _lastSetCamera->from.x += offsetX;
+  _lastSetCamera->from.y += offsetY;
   setCamera(_lastSetCamera);
 }
 
 void OptixManager::moveLookAt(float offsetX, float offsetY) {
-  _lastSetCamera.lookAt.x += offsetX;
-  _lastSetCamera.lookAt.y += offsetY;
+  _lastSetCamera->lookAt.x += offsetX;
+  _lastSetCamera->lookAt.y += offsetY;
   setCamera(_lastSetCamera);
 }

@@ -5,5 +5,5 @@
 class GltfLoader {
  public:
   GltfLoader();
-  bool load(const std::string& filename, Model& triangleMeshes);
+  bool load(const std::string& filename, Scene& triangleMeshes);
 };

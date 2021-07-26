@@ -11,11 +11,12 @@
 #include <cstddef>
 #include <span>
 #include <vector>
+#include <glm/gtx/quaternion.hpp>
 
 GltfLoader::GltfLoader() {
 }
 
-bool GltfLoader::load(const std::string& filename, Model& model) {
+bool GltfLoader::load(const std::string& filename, Scene& scene) {
   tinygltf::Model    gltfModel;
   tinygltf::TinyGLTF loader;
   bool               ret = false;
@@ -41,6 +42,15 @@ bool GltfLoader::load(const std::string& filename, Model& model) {
     return false;
   }
 
+  // get first camera if there is one
+  if (gltfModel.cameras.size() > 0) {
+    const auto& camera = gltfModel.cameras[0];
+    if (camera.type == "perspective") {
+      scene.camera       = std::make_unique<Camera>(Camera());
+      scene.camera->fovY = camera.perspective.yfov;
+    }
+  }
+
   // create the imateTextures
   for (const auto& image : gltfModel.images) {
     Texture tex;
@@ -48,10 +58,47 @@ bool GltfLoader::load(const std::string& filename, Model& model) {
     tex.pixelData.resize(image.image.size());
     std::memcpy(tex.pixelData.data(), image.image.data(), image.image.size());
 
-    model.textures.push_back(tex);
+    scene.textures.push_back(tex);
   }
 
-  for (const auto& node : gltfModel.nodes) {
+  // only access first scene
+  for (const auto& nodeIdx : gltfModel.scenes[0].nodes) {
+    const auto& node = gltfModel.nodes[nodeIdx];
+
+    if (node.mesh == -1) {
+      // no mesh, might be a camera or light ;-)
+
+      glm::vec3 eye      = {0.0f, 0.0f, 0.0f};
+      glm::vec3 center   = {0.0f, 0.0f, 0.0f};
+      glm::vec3 up       = {0.0f, 1.0f, 0.0f};
+      glm::quat rotation = {0.0f, 0.0f, 0.0f, 1.0f};
+
+      if (node.translation.size() == 3) {
+        eye = {node.translation[0], node.translation[1], node.translation[2]};
+      }
+
+      if (node.rotation.size() == 4) {
+        rotation = {
+            (float)node.rotation[0],
+            (float)node.rotation[1],
+            (float)node.rotation[2],
+            (float)node.rotation[3]
+
+        };
+      }
+
+      glm::mat4 cameraToWorld  = glm::lookAt(eye, center, up);
+      glm::mat4 rotationMatrix = glm::toMat4(rotation);
+
+      glm::mat4 cameraMatrix = cameraToWorld * rotationMatrix;
+      glm::vec4 lookAt       = glm::vec4(center, 1.0f) * cameraMatrix;
+
+      scene.camera->from   = eye;
+      scene.camera->lookAt = lookAt;
+      scene.camera->up     = up;
+      continue;
+    }
+
     auto mesh = gltfModel.meshes[node.mesh];
 
     for (auto& primitive : mesh.primitives) {
@@ -175,7 +222,7 @@ bool GltfLoader::load(const std::string& filename, Model& model) {
         }
       }
 
-      model.meshes.push_back(triangleMesh);
+      scene.meshes.push_back(triangleMesh);
     }
   }
 

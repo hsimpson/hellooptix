@@ -2,6 +2,8 @@
 
 #include <vector>
 #include <glm/glm.hpp>
+#include <memory>
+#include "../camera.h"
 
 struct Texture {
   glm::uvec2                 resolution;
@@ -18,9 +20,10 @@ struct TriangleMesh {
   int textureID{-1};
 };
 
-struct Model {
+struct Scene {
   std::vector<TriangleMesh> meshes;
   std::vector<Texture>      textures;
+  std::shared_ptr<Camera>   camera;
 };
 
 class Cube : public TriangleMesh {

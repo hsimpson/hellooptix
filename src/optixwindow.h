@@ -9,8 +9,7 @@
 class OptixWindow : public GLFWindow {
  public:
   OptixWindow(const std::string &title,
-              const Model &      model,
-              const Camera &     camera,
+              const Scene &      scene,
               uint32_t           width,
               uint32_t           height);
   virtual ~OptixWindow();
