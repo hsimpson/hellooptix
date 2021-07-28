@@ -565,9 +565,9 @@ void OptixManager::writeImage(const std::string& imagePath) {
 }
 
 void OptixManager::setCamera(const std::shared_ptr<Camera>& camera) {
-  std::cout << "OptixManager::setCamera()" << std::endl;
-  std::cout << std::format("from: {}, {}, {}", camera->from.x, camera->from.y, camera->from.z) << std::endl;
-  std::cout << std::format("lookAt: {}, {}, {}", camera->lookAt.x, camera->lookAt.y, camera->lookAt.z) << std::endl;
+  // std::cout << "OptixManager::setCamera()" << std::endl;
+  // std::cout << std::format("from: {}, {}, {}", camera->from.x, camera->from.y, camera->from.z) << std::endl;
+  // std::cout << std::format("lookAt: {}, {}, {}", camera->lookAt.x, camera->lookAt.y, camera->lookAt.z) << std::endl;
 
   _lastSetCamera = camera;
 
