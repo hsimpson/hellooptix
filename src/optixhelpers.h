@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <format>
 #include <iostream>
+#include <glm/glm.hpp>
 
 #define CUDA_CHECK(call)                                     \
   {                                                          \
@@ -54,3 +55,7 @@
   }
 
 #define PRINT(var) std::cout << #var << "=" << var << std::endl;
+
+inline float3 vec3ToFloat3(const glm::vec3 &v) {
+  return make_float3(v.x, v.y, v.z);
+}

@@ -17,9 +17,10 @@ class OptixWindow : public GLFWindow {
   virtual void resize(uint32_t width, uint32_t height);
   virtual void draw();
   virtual void render();
-  virtual void zoom(float offset);
+  virtual void dolly(float offset);
   virtual void move(float offsetX, float offsetY);
   virtual void moveLookAt(float offsetX, float offsetY);
+  virtual void rotate(float pitch, float yaw, float roll = 0);
 
  private:
   std::unique_ptr<OptixManager> _optixManager;

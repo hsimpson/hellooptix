@@ -43,15 +43,13 @@ bool GltfLoader::load(const std::string& filename, Scene& scene) {
   }
 
   // get first camera if there is one
-  float cameraZFar  = 1.0f;
-  float cameraZNear = 0.1f;
   if (gltfModel.cameras.size() > 0) {
     const auto& camera = gltfModel.cameras[0];
     if (camera.type == "perspective") {
-      scene.camera       = std::make_unique<Camera>(Camera());
-      scene.camera->fovY = camera.perspective.yfov;
-      cameraZFar         = camera.perspective.zfar;
-      cameraZNear        = camera.perspective.znear;
+      scene.camera = std::make_unique<Camera>(Camera(
+          camera.perspective.yfov,
+          camera.perspective.znear,
+          camera.perspective.zfar));
     }
   }
 
@@ -72,14 +70,13 @@ bool GltfLoader::load(const std::string& filename, Scene& scene) {
     if (node.mesh == -1) {
       // no mesh, might be a camera or light ;-)
 
-      glm::vec3 cameraPosition = {0.0f, 0.0f, 0.0f};
-      glm::vec4 up             = {0.0f, 1.0f, 0.0f, 1.0f};
-      glm::vec4 front          = {0.0f, 0.0f, 1.0f, 1.0f};
       glm::quat cameraRotation = {1.0f, 0.0f, 0.0f, 0.0f};
       glm::quat sceneRotation  = {1.0f, 0.0f, 0.0f, 0.0f};
 
       if (node.translation.size() == 3) {
-        cameraPosition = {node.translation[0], node.translation[1], node.translation[2]};
+        scene.camera->setPosition({node.translation[0],
+                                   node.translation[1],
+                                   node.translation[2]});
       }
 
       if (node.rotation.size() == 4) {
@@ -106,15 +103,9 @@ bool GltfLoader::load(const std::string& filename, Scene& scene) {
           );
         }
       }
-      glm::mat4 rotationMatrix = glm::toMat4(cameraRotation * sceneRotation);
-      glm::vec3 cameraUp       = glm::normalize(glm::vec3(rotationMatrix * up));
-      glm::vec3 cameraFront    = glm::normalize(glm::vec3(rotationMatrix * front));
 
-      glm::vec3 cameraDirection = cameraFront * -1.0f;
+      scene.camera->setRotation(cameraRotation * sceneRotation);
 
-      scene.camera->from   = cameraPosition;
-      scene.camera->up     = cameraUp;
-      scene.camera->lookAt = cameraPosition + cameraDirection * cameraZFar;
       continue;
     }
 

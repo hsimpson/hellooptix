@@ -33,6 +33,8 @@ GLFWindow::GLFWindow(const std::string& title, uint32_t width, uint32_t height)
   glfwSetFramebufferSizeCallback(_handle, GLFWindow::framebufferResizeCallback);
   glfwSetKeyCallback(_handle, GLFWindow::keyCallback);
   glfwSetScrollCallback(_handle, GLFWindow::scrollCallback);
+  glfwSetCursorPosCallback(_handle, GLFWindow::cursorPosCallback);
+  glfwSetMouseButtonCallback(_handle, GLFWindow::mouseButtonCallback);
 }
 
 GLFWindow::~GLFWindow() {
@@ -62,36 +64,37 @@ void GLFWindow::keyCallback(GLFWwindow* window, int key, int scancode, int actio
 
   float offsetX = 0.0f;
   float offsetY = 0.0f;
+  float factor  = 0.1f;
 
   if (mods == GLFW_MOD_ALT) {
     switch (key) {
       case GLFW_KEY_W:
-        offsetY = 1.0f;
+        offsetY = factor;
         break;
       case GLFW_KEY_S:
-        offsetY = -1.0f;
+        offsetY = -factor;
         break;
       case GLFW_KEY_A:
-        offsetX = -1.0f;
+        offsetX = -factor;
         break;
       case GLFW_KEY_D:
-        offsetX = 1.0f;
+        offsetX = factor;
         break;
     }
     w->moveLookAt(offsetX, offsetY);
   } else {
     switch (key) {
       case GLFW_KEY_W:
-        offsetY = 1.0f;
+        offsetY = factor;
         break;
       case GLFW_KEY_S:
-        offsetY = -1.0f;
+        offsetY = -factor;
         break;
       case GLFW_KEY_A:
-        offsetX = -1.0f;
+        offsetX = -factor;
         break;
       case GLFW_KEY_D:
-        offsetX = 1.0f;
+        offsetX = factor;
         break;
     }
     w->move(offsetX, offsetY);
@@ -100,5 +103,30 @@ void GLFWindow::keyCallback(GLFWwindow* window, int key, int scancode, int actio
 
 void GLFWindow::scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
   auto w = static_cast<GLFWindow*>(glfwGetWindowUserPointer(window));
-  w->zoom(yoffset);
+  w->dolly(yoffset * -0.5f);
+}
+
+void GLFWindow::cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
+  auto w = static_cast<GLFWindow*>(glfwGetWindowUserPointer(window));
+  if (w->_leftMouseButtonDownPressed) {
+    glm::vec2 currentPos = {xpos, ypos};
+    glm::vec2 offset     = (currentPos - w->_cursorPos) * 0.0005f;
+    w->rotate(offset.y, offset.x);
+    w->_cursorPos = currentPos;
+  }
+}
+
+void GLFWindow::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+  auto w = static_cast<GLFWindow*>(glfwGetWindowUserPointer(window));
+
+  if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+    w->_leftMouseButtonDownPressed = true;
+
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+    w->_cursorPos = {(float)xpos, (float)ypos};
+
+  } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+    w->_leftMouseButtonDownPressed = false;
+  }
 }

@@ -565,38 +565,39 @@ void OptixManager::writeImage(const std::string& imagePath) {
 }
 
 void OptixManager::setCamera(const std::shared_ptr<Camera>& camera) {
-  // std::cout << "OptixManager::setCamera()" << std::endl;
-  // std::cout << std::format("from: {}, {}, {}", camera->from.x, camera->from.y, camera->from.z) << std::endl;
-  // std::cout << std::format("lookAt: {}, {}, {}", camera->lookAt.x, camera->lookAt.y, camera->lookAt.z) << std::endl;
-
   _lastSetCamera = camera;
 
-  _launchParams.camera.position  = make_float3(camera->from.x, camera->from.y, camera->from.z);
-  auto direction                 = glm::normalize(camera->lookAt - camera->from);
-  _launchParams.camera.direction = make_float3(direction.x, direction.y, direction.z);
+  // _launchParams.camera.position  = make_float3(camera->positon.x, camera->positon.y, camera->positon.z);
+  _launchParams.camera.position  = vec3ToFloat3(camera->position());
+  auto direction                 = glm::normalize(camera->front() * -1.0f);
+  _launchParams.camera.direction = vec3ToFloat3(direction);
 
   const float aspect = float(_launchParams.frame.size.x) / float(_launchParams.frame.size.y);
 
-  auto horizontal = camera->fovY * aspect * glm::normalize(glm::cross(direction, camera->up));
-  auto vertical   = camera->fovY * glm::normalize(glm::cross(horizontal, direction));
+  auto horizontal = camera->fovY() * aspect * glm::normalize(glm::cross(direction, camera->up()));
+  auto vertical   = camera->fovY() * glm::normalize(glm::cross(horizontal, direction));
 
-  _launchParams.camera.horizontal = make_float3(horizontal.x, horizontal.y, horizontal.z);
-  _launchParams.camera.vertical   = make_float3(vertical.x, vertical.y, vertical.z);
+  _launchParams.camera.horizontal = vec3ToFloat3(horizontal);
+  _launchParams.camera.vertical   = vec3ToFloat3(vertical);
 }
 
-void OptixManager::zoom(float offset) {
-  _lastSetCamera->from.z += offset;
+void OptixManager::dolly(float offset) {
+  _lastSetCamera->translate({0.0f, 0.0f, offset});
   setCamera(_lastSetCamera);
 }
 
 void OptixManager::move(float offsetX, float offsetY) {
-  _lastSetCamera->from.x += offsetX;
-  _lastSetCamera->from.y += offsetY;
+  _lastSetCamera->translate({offsetX, offsetY, 0.0f});
   setCamera(_lastSetCamera);
 }
 
 void OptixManager::moveLookAt(float offsetX, float offsetY) {
-  _lastSetCamera->lookAt.x += offsetX;
-  _lastSetCamera->lookAt.y += offsetY;
+  // _lastSetCamera->lookAt.x += offsetX;
+  // _lastSetCamera->lookAt.y += offsetY;
+  // setCamera(_lastSetCamera);
+}
+
+void OptixManager::rotate(float pitch, float yaw, float roll) {
+  _lastSetCamera->rotate(pitch, yaw, roll);
   setCamera(_lastSetCamera);
 }

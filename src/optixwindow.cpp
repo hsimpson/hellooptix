@@ -75,8 +75,8 @@ void OptixWindow::render() {
   // std::cout << std::format("Optix duration: {}ms\n", duration);
 }
 
-void OptixWindow::zoom(float offset) {
-  _optixManager->zoom(offset);
+void OptixWindow::dolly(float offset) {
+  _optixManager->dolly(offset);
 }
 
 void OptixWindow::move(float offsetX, float offsetY) {
@@ -85,4 +85,8 @@ void OptixWindow::move(float offsetX, float offsetY) {
 
 void OptixWindow::moveLookAt(float offsetX, float offsetY) {
   _optixManager->moveLookAt(offsetX, offsetY);
+}
+
+void OptixWindow::rotate(float pitch, float yaw, float roll) {
+  _optixManager->rotate(pitch, yaw, roll);
 }

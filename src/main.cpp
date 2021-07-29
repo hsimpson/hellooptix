@@ -24,13 +24,7 @@ int main() {
   loader.load("./src/assets/models/scene.gltf", scene);
 
   if (!scene.camera) {
-    scene.camera = std::make_shared<Camera>(Camera(
-        {2.0f, 4.0f, 4.0f},
-        {0.0f, 0.0f, 0.0f},
-        {0.0f, 1.0f, 0.0f},
-        glm::radians(30.0f)
-
-            ));
+    scene.camera = std::make_shared<Camera>(Camera(0.30f, 0.1f, 1000.0f));
   }
 
   OptixWindow optixWindow("Hello Optix!", scene, 1920, 1080);

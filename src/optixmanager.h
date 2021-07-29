@@ -24,9 +24,10 @@ class OptixManager {
   }
 
   void setCamera(const std::shared_ptr<Camera>& camera);
-  void zoom(float offset);
+  void dolly(float offset);
   void move(float offsetX, float offsetY);
   void moveLookAt(float offsetX, float offsetY);
+  void rotate(float pitch, float yaw, float roll = 0.0f);
 
  private:
   void initOptix();

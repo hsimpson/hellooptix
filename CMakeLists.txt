@@ -15,6 +15,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(hellooptix
   ./src/main.cpp
+  ./src/camera.cpp
   ./src/optixmanager.cpp
   ./src/program.cpp
   ./src/glfwindow.cpp
