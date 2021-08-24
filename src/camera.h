@@ -23,8 +23,8 @@ class Camera {
   const glm::vec3 &up() const {
     return _up;
   }
-  const glm::vec3 &front() const {
-    return _front;
+  const glm::vec3 &forward() const {
+    return _forward;
   }
   const float fovY() const {
     return _fovY;
@@ -48,9 +48,9 @@ class Camera {
   glm::vec3 _position = {0.0f, 0.0f, 0.0f};  // camera position
   glm::vec3 _right    = {1.0f, 0.0f, 0.0f};  // camera right vector
   glm::vec3 _up       = {0.0f, 1.0f, 0.0f};  // camera up vector
-  glm::vec3 _front    = {0.0f, 0.0f, 1.0f};  // camera front vector
+  glm::vec3 _forward  = {0.0f, 0.0f, 1.0f};  // camera front vector
 
-  constexpr static glm::vec4 RIGHT = {1.0f, 0.0f, 0.0f, 1.0f};
-  constexpr static glm::vec4 UP    = {0.0f, 1.0f, 0.0f, 1.0f};
-  constexpr static glm::vec4 FRONT = {0.0f, 0.0f, 1.0f, 1.0f};
+  constexpr static glm::vec4 RIGHT   = {1.0f, 0.0f, 0.0f, 1.0f};
+  constexpr static glm::vec4 UP      = {0.0f, 1.0f, 0.0f, 1.0f};
+  constexpr static glm::vec4 FORWARD = {0.0f, 0.0f, 1.0f, 1.0f};
 };

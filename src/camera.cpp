@@ -35,5 +35,5 @@ void Camera::updateVectors() {
   glm::mat4 rotationMatrix = glm::toMat4(_rotation);
   _right                   = glm::normalize(glm::vec3(rotationMatrix * Camera::RIGHT));
   _up                      = glm::normalize(glm::vec3(rotationMatrix * Camera::UP));
-  _front                   = glm::normalize(glm::vec3(rotationMatrix * Camera::FRONT));
+  _forward                 = glm::normalize(glm::vec3(rotationMatrix * Camera::FORWARD));
 }

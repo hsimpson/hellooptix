@@ -8,7 +8,8 @@ project(hellooptix
 
 
 # put this in an early stage to work
-set(CMAKE_CXX_STANDARD 20)
+# 23 --> -std:c++latest
+set(CMAKE_CXX_STANDARD 23)
 
 # include(CTest)
 # enable_testing()

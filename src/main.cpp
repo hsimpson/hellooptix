@@ -27,7 +27,9 @@ int main() {
     scene.camera = std::make_shared<Camera>(Camera(0.30f, 0.1f, 1000.0f));
   }
 
-  OptixWindow optixWindow("Hello Optix!", scene, 1920, 1080);
+  constexpr int width  = 1024;
+  constexpr int height = 576;
+  OptixWindow   optixWindow("Hello Optix!", scene, width, height);
   optixWindow.run();
 
   return 0;

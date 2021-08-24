@@ -569,7 +569,7 @@ void OptixManager::setCamera(const std::shared_ptr<Camera>& camera) {
 
   // _launchParams.camera.position  = make_float3(camera->positon.x, camera->positon.y, camera->positon.z);
   _launchParams.camera.position  = vec3ToFloat3(camera->position());
-  auto direction                 = glm::normalize(camera->front() * -1.0f);
+  auto direction                 = glm::normalize(camera->forward() * -1.0f);
   _launchParams.camera.direction = vec3ToFloat3(direction);
 
   const float aspect = float(_launchParams.frame.size.x) / float(_launchParams.frame.size.y);
@@ -582,12 +582,30 @@ void OptixManager::setCamera(const std::shared_ptr<Camera>& camera) {
 }
 
 void OptixManager::dolly(float offset) {
-  _lastSetCamera->translate({0.0f, 0.0f, offset});
+  auto forward  = _lastSetCamera->forward();
+  auto position = _lastSetCamera->position();
+
+  if (offset > 0.0f) {
+    _dollyZoomOffset += .5f;
+    _dollyZoomOffset = std::abs(_dollyZoomOffset);
+  } else {
+    _dollyZoomOffset -= .5f;
+    _dollyZoomOffset = -std::abs(_dollyZoomOffset);
+  }
+
+  auto newPos = position + forward * _dollyZoomOffset;
+  std::cout << "dolly offset: " << _dollyZoomOffset << std::endl;
+
+  _lastSetCamera->setPosition(newPos);
+
   setCamera(_lastSetCamera);
 }
 
 void OptixManager::move(float offsetX, float offsetY) {
-  _lastSetCamera->translate({offsetX, offsetY, 0.0f});
+  auto position = _lastSetCamera->position();
+  auto newPos   = position + _lastSetCamera->right() * offsetX + _lastSetCamera->up() * offsetY;
+  _lastSetCamera->setPosition(newPos);
+
   setCamera(_lastSetCamera);
 }
 
