@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include "../camera.h"
+#include "./boundingbox.h"
 
 struct Texture {
   glm::uvec2                 resolution;
@@ -17,6 +18,8 @@ struct TriangleMesh {
   std::vector<glm::uvec3> indices;
   glm::vec3               color;
 
+  BoundingBox boundingBox;
+
   int textureID{-1};
 };
 
@@ -24,6 +27,8 @@ struct Scene {
   std::vector<TriangleMesh> meshes;
   std::vector<Texture>      textures;
   std::shared_ptr<Camera>   camera;
+
+  BoundingBox boundingBox;
 };
 
 class Cube : public TriangleMesh {

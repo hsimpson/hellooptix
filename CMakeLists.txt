@@ -23,6 +23,7 @@ add_executable(hellooptix
   ./src/optixwindow.cpp
   ./src/geometry/trianglemesh.cpp
   ./src/geometry/gltfloader.cpp
+  ./src/geometry/boundingbox.cpp
 )
 
 # set(CPACK_PROJECT_NAME ${PROJECT_NAME})

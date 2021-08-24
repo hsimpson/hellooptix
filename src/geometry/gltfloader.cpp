@@ -232,7 +232,11 @@ bool GltfLoader::load(const std::string& filename, Scene& scene) {
         }
       }
 
+      triangleMesh.boundingBox.addPoints(triangleMesh.vertices);
+
       scene.meshes.push_back(triangleMesh);
+
+      scene.boundingBox.addBox(triangleMesh.boundingBox);
     }
   }
 

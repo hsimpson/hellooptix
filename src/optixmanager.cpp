@@ -585,11 +585,13 @@ void OptixManager::dolly(float offset) {
   auto forward  = _lastSetCamera->forward();
   auto position = _lastSetCamera->position();
 
+  float dollySpeed = 0.01f * _scene.boundingBox.radius();
+
   if (offset > 0.0f) {
-    _dollyZoomOffset += .5f;
+    _dollyZoomOffset += dollySpeed;
     _dollyZoomOffset = std::abs(_dollyZoomOffset);
   } else {
-    _dollyZoomOffset -= .5f;
+    _dollyZoomOffset -= dollySpeed;
     _dollyZoomOffset = -std::abs(_dollyZoomOffset);
   }
 
