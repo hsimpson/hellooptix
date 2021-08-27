@@ -33,12 +33,16 @@ OptixManager::OptixManager(const Scene& scene,
   createShaderBindingTable();
 
   _outputBuffer = new CUDAOutputBuffer<uchar4>(CUDAOutputBufferType::CUDA_DEVICE, _width, _height);
+  _accumBuffer  = new CUDAOutputBuffer<float4>(CUDAOutputBufferType::CUDA_DEVICE, _width, _height);
 
-  _launchParams.frame.colorbuffer = _outputBuffer->map();
+  _launchParams.frame.colorBuffer = _outputBuffer->map();
+  _launchParams.frame.accumBuffer = _accumBuffer->map();
   _launchParams.frame.size        = make_uint2(_width, _height);
+  _launchParams.frame.sampleIndex = 0;
 }
 
 OptixManager::~OptixManager() {
+  delete _accumBuffer;
   delete _outputBuffer;
 
   CUDA_CHECK(cudaFree(reinterpret_cast<void*>(_shaderBindingTable.raygenRecord)));
@@ -109,7 +113,7 @@ void OptixManager::createModule() {
   _pipelineCompileOptions.usesMotionBlur = false;
   // _pipelineCompileOptions.traversableGraphFlags            = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
   _pipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
-  _pipelineCompileOptions.numPayloadValues      = 3;
+  _pipelineCompileOptions.numPayloadValues      = 2;
   // _pipelineCompileOptions.numAttributeValues               = 2;
   _pipelineCompileOptions.exceptionFlags                   = OPTIX_EXCEPTION_FLAG_NONE;
   _pipelineCompileOptions.pipelineLaunchParamsVariableName = "optixLaunchParams";
@@ -493,7 +497,7 @@ void OptixManager::createShaderBindingTable() {
 }
 
 void OptixManager::launch() {
-  _launchParams.frame.colorbuffer = _outputBuffer->map();
+  std::cout << "sample index: " << _launchParams.frame.sampleIndex << std::endl;
 
   CUdeviceptr dParam;
   CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&dParam), sizeof(Params)));
@@ -517,7 +521,8 @@ void OptixManager::launch() {
       /*depth=*/1));
 
   CUDA_SYNC_CHECK();
-  _outputBuffer->unmap();
+
+  _launchParams.frame.sampleIndex++;
 }
 
 void OptixManager::resize(uint32_t width, uint32_t height) {
@@ -527,10 +532,18 @@ void OptixManager::resize(uint32_t width, uint32_t height) {
   // noop on no change
   if (width == _width && height == _height) return;
 
+  _launchParams.frame.sampleIndex = 0;
+
   _width  = width;
   _height = height;
 
+  _outputBuffer->unmap();
+  _accumBuffer->unmap();
+  _accumBuffer->resize(_width, _height);
   _outputBuffer->resize(_width, _height);
+  _launchParams.frame.colorBuffer = _outputBuffer->map();
+  _launchParams.frame.accumBuffer = _accumBuffer->map();
+
   _launchParams.frame.size = make_uint2(_width, _height);
 
   setCamera(_lastSetCamera);
@@ -565,7 +578,8 @@ void OptixManager::writeImage(const std::string& imagePath) {
 }
 
 void OptixManager::setCamera(const std::shared_ptr<Camera>& camera) {
-  _lastSetCamera = camera;
+  _lastSetCamera                  = camera;
+  _launchParams.frame.sampleIndex = 0;
 
   // _launchParams.camera.position  = make_float3(camera->positon.x, camera->positon.y, camera->positon.z);
   _launchParams.camera.position  = vec3ToFloat3(camera->position());

@@ -63,6 +63,7 @@ class OptixManager {
   OptixPipelineCompileOptions _pipelineCompileOptions = {};
 
   CUDAOutputBuffer<uchar4>* _outputBuffer = nullptr;
+  CUDAOutputBuffer<float4>* _accumBuffer  = nullptr;
   Params                    _launchParams;
 
   const Scene&            _scene;

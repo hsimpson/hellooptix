@@ -2,8 +2,10 @@
 
 struct Params {
   struct {
-    uchar4 *colorbuffer;
-    uint2   size;
+    float4 *     accumBuffer;
+    uchar4 *     colorBuffer;
+    uint2        size;
+    unsigned int sampleIndex;
   } frame;
 
   struct {
