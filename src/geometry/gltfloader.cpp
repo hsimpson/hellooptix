@@ -53,7 +53,7 @@ bool GltfLoader::load(const std::string& filename, Scene& scene) {
     }
   }
 
-  // create the imateTextures
+  // create the image textures
   for (const auto& image : gltfModel.images) {
     Texture tex;
     tex.resolution = glm::uvec2(image.width, image.height);
@@ -222,7 +222,7 @@ bool GltfLoader::load(const std::string& filename, Scene& scene) {
             // const auto& image   = gltfModel.images[texture.source];
             // const auto& sampler = gltfModel.samplers[texture.sampler];
 
-            triangleMesh.textureID = texture.sampler;
+            triangleMesh.textureID = texture.source;
           } else if (material.pbrMetallicRoughness.baseColorFactor.size() >= 3) {
             triangleMesh.color = {
                 material.pbrMetallicRoughness.baseColorFactor[0],
