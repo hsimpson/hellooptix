@@ -100,7 +100,8 @@
     "xstddef": "cpp",
     "xtr1common": "cpp",
     "__nullptr": "cpp",
-    "__bit_reference": "cpp"
+    "__bit_reference": "cpp",
+    "set": "cpp"
   },
   "C_Cpp.errorSquiggles": "Disabled"
 }

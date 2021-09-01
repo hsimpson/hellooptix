@@ -13,9 +13,6 @@
 #include <vector>
 #include <glm/gtx/quaternion.hpp>
 
-GltfLoader::GltfLoader() {
-}
-
 bool GltfLoader::load(const std::string& filename, Scene& scene) {
   tinygltf::Model    gltfModel;
   tinygltf::TinyGLTF loader;
@@ -35,7 +32,7 @@ bool GltfLoader::load(const std::string& filename, Scene& scene) {
   }
 
   if (warn.length() > 0) {
-    std::cerr << "Warning: " << warn << std::endl;
+    std::cout << "Warning: " << warn << std::endl;
   }
 
   if (!ret) {

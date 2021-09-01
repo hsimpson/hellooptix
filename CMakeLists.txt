@@ -23,6 +23,7 @@ add_executable(hellooptix
   ./src/optixwindow.cpp
   ./src/geometry/trianglemesh.cpp
   ./src/geometry/gltfloader.cpp
+  ./src/geometry/objloader.cpp
   ./src/geometry/boundingbox.cpp
 )
 
@@ -58,7 +59,10 @@ find_package(OptiX REQUIRED)
 find_package(glad CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
+find_package(tinyobjloader CONFIG REQUIRED)
 
+
+find_path(STB_INCLUDE_DIRS "stb.h")
 
 include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}
@@ -69,13 +73,15 @@ include_directories(
 find_path(GLM_INCLUDE_DIRS glm/glm.hpp)
 find_path(TINYGLTF_INCLUDE_DIRS "tiny_gltf.h")
 
+target_include_directories("${TARGET_NAME}" PRIVATE ${STB_INCLUDE_DIRS})
+
 #target_include_directories(main PRIVATE ${TINYGLTF_INCLUDE_DIRS})
 
 # message("OptiX_INSTALL_DIR: ${OptiX_INSTALL_DIR}")
 
 # generate the dynamic include file
 set(NVRTC_RELATIVE_INCLUDE_DIRS "\\
-  \".\", ")
+\".\", ")
 
 set(NVRTC_ABSOLUTE_INCLUDE_DIRS "\\
   \"${OptiX_INCLUDE}\", \\
@@ -92,4 +98,5 @@ target_link_libraries( "${TARGET_NAME}"
   glad::glad
   glfw
   glm::glm
+  tinyobjloader::tinyobjloader
 )
