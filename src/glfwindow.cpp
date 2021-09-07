@@ -1,8 +1,9 @@
 #include "glfwindow.h"
 #include <iostream>
+#include "spdlog/spdlog.h"
 
 static void glfw_error_callback(int error, const char* description) {
-  std::cerr << "Error: " << description << std::endl;
+  spdlog::error("GLFW Error {}: {}", error, description);
 }
 
 GLFWindow::GLFWindow(const std::string& title, uint32_t width, uint32_t height)

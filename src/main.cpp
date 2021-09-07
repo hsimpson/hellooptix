@@ -2,7 +2,10 @@
 #include <iostream>
 #include "geometry/trianglemesh.h"
 #include "geometry/gltfloader.h"
+#include "geometry/objloader.h"
 #include "camera.h"
+#include "spdlog/spdlog.h"
+#include "spdlog/stopwatch.h"
 
 int main() {
   /*
@@ -15,20 +18,35 @@ int main() {
   std::vector<TriangleMesh> meshes = {cube1, cube2};
   */
 
-  Scene scene;
+  spdlog::set_level(spdlog::level::debug);  // Set global log level to debug
 
-  GltfLoader loader;
-  // loader.load("./src/assets/models/cube.gltf", scene);
-  // loader.load("./src/assets/models/monkey.gltf", scene);
-  // loader.load("./src/assets/models/torus.gltf", scene);
-  loader.load("./src/assets/models/scene.gltf", scene);
+  spdlog::stopwatch sw;
+  Scene             scene;
+
+  GltfLoader gltfLoader;
+  ObjLoader  objLoader;
+
+  // gltfLoader.load("./src/assets/models/cube.gltf", scene);
+  // gltfLoader.load("./src/assets/models/monkey.gltf", scene);
+  // gltfLoader.load("./src/assets/models/torus.gltf", scene);
+  gltfLoader.load("./src/assets/models/scene.gltf", scene);
+  // gltfLoader.load("./src/assets/models/multi-texture/multi_texture.gltf", scene);
+
+  // restricted models
+  // gltfLoader.load("./src/assets/models/restricted/Citadell/Citadell.gltf", scene);
+  // gltfLoader.load("./src/assets/models/restricted/sponza-gltf/sponza.gltf", scene);
+  // objLoader.load("./src/assets/models/restricted/sponza/sponza.obj", scene);
+  // objLoader.load("./src/assets/models/restricted/CornellBox/CornellBox-Original.obj", scene);
+  // objLoader.load("./src/assets/models/multi-texture/multi_texture.obj", scene);
+
+  spdlog::debug("Duration scene loading: {:.3} s", sw);
 
   if (!scene.camera) {
     scene.camera = std::make_shared<Camera>(Camera(0.30f, 0.1f, 1000.0f));
   }
 
-  constexpr int width  = 1024;
-  constexpr int height = 576;
+  constexpr int width  = 1920;
+  constexpr int height = 1080;
   OptixWindow   optixWindow("Hello Optix!", scene, width, height);
   optixWindow.run();
 

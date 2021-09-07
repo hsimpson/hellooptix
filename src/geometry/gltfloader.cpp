@@ -12,6 +12,7 @@
 #include <span>
 #include <vector>
 #include <glm/gtx/quaternion.hpp>
+#include "spdlog/spdlog.h"
 
 bool GltfLoader::load(const std::string& filename, Scene& scene) {
   tinygltf::Model    gltfModel;
@@ -28,11 +29,11 @@ bool GltfLoader::load(const std::string& filename, Scene& scene) {
   }
 
   if (err.length() > 0) {
-    std::cerr << "Error: " << err << std::endl;
+    spdlog::error("GLTF loader error: {}", err);
   }
 
   if (warn.length() > 0) {
-    std::cout << "Warning: " << warn << std::endl;
+    spdlog::warn("GLTF loader warning: {}", warn);
   }
 
   if (!ret) {

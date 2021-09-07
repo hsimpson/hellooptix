@@ -5,6 +5,7 @@
 #include "program.h"
 #include "nvrtchelpers.h"
 #include <config.h>
+#include "spdlog/spdlog.h"
 
 // NVRTC compiler options
 #define CUDA_NVRTC_OPTIONS \
@@ -26,7 +27,7 @@ Program::Program(std::string filename)
 const std::string Program::getPTX() {
   std::ifstream inputFile(_filename.c_str(), std::ios::binary);
   if (!inputFile.good()) {
-    std::cerr << "failed to load file: " << _filename << std::endl;
+    spdlog::error("Failed to load file {}", _filename);
     return "";
   }
   std::vector<unsigned char> buffer = std::vector<unsigned char>(std::istreambuf_iterator<char>(inputFile), {});
@@ -76,8 +77,7 @@ const std::string Program::getPTX() {
     if (logSize > 1) {
       NVRTC_CHECK_ERROR(nvrtcGetProgramLog(prog, &compileLog[0]));
 
-      std::cerr << "NVRTC compile failed:" << std::endl
-                << compileLog;
+      spdlog::error("NVRTC compilation failed: {}", compileLog);
     }
     return "";
   }

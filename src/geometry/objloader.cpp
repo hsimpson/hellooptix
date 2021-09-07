@@ -2,6 +2,7 @@
 #include <iostream>
 #include <filesystem>
 #include <set>
+#include "spdlog/spdlog.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
@@ -99,19 +100,18 @@ bool ObjLoader::load(const std::string& filename, Scene& scene) {
   tinyobj::ObjReader       reader;
   reader_config.mtl_search_path = basePath.string();  // Path to material files
 
-  if (!reader.ParseFromFile(filename, reader_config)) {
-    if (!reader.Error().empty()) {
-      std::cerr << "TinyObjReader: " << reader.Error();
-    }
-    return false;
-  }
+  bool parseResult = reader.ParseFromFile(filename, reader_config);
 
   if (!reader.Warning().empty()) {
-    std::cout << "TinyObjReader: " << reader.Warning();
+    spdlog::warn("TinyObjReader: {}", reader.Warning());
   }
 
   if (!reader.Error().empty()) {
-    std::cerr << "TinyObjReader: " << reader.Error();
+    spdlog::error("TinyObjReader: {}", reader.Error());
+  }
+
+  if (!parseResult) {
+    return false;
   }
 
   auto& attrib    = reader.GetAttrib();

@@ -9,12 +9,33 @@
 #include <sstream>
 #include <format>
 #include <fstream>
+#include "spdlog/spdlog.h"
 
 static void contextLogCallback(unsigned int level,
                                const char*  tag,
                                const char*  message,
                                void*) {
-  fprintf(stderr, "[%2d][%12s]: %s\n", (int)level, tag, message);
+  const std::string fmt = "[{}]: {}";
+  switch (level) {
+    case 0:
+      spdlog::debug(fmt, tag, message);
+      break;
+    case 1:
+      spdlog::critical(fmt, tag, message);
+      break;
+    case 2:
+      spdlog::error(fmt, tag, message);
+      break;
+    case 3:
+      spdlog::warn(fmt, tag, message);
+      break;
+    case 4:
+      spdlog::info(fmt, tag, message);
+      break;
+
+    default:
+      break;
+  }
 }
 
 OptixManager::OptixManager(const Scene& scene,
@@ -59,7 +80,7 @@ OptixManager::~OptixManager() {
 }
 
 void OptixManager::initOptix() {
-  std::cout << "init optix ..." << std::endl;
+  spdlog::info("Init optix...");
   // -------------------------------------------------------
   // check for available optix7 capable devices
   // -------------------------------------------------------
@@ -68,18 +89,20 @@ void OptixManager::initOptix() {
   CUDA_CHECK(cudaGetDeviceCount(&numDevices));
   if (numDevices == 0)
     throw std::runtime_error("no CUDA capable devices found!");
-  std::cout << "found " << numDevices << " CUDA devices" << std::endl;
+
+  spdlog::info("Found {} CUDA devices", numDevices);
 
   // -------------------------------------------------------
   // initialize optix
   // -------------------------------------------------------
   OPTIX_CHECK(optixInit());
 
-  std::cout << "optix successfully initialized" << std::endl;
+  spdlog::info("optix successfully initialized");
 }
 
 void OptixManager::createContext() {
-  std::cout << "creating optix context ..." << std::endl;
+  spdlog::info("creating optix context ...");
+
   // for this sample, do everything on one device
   const int deviceID = 0;
 
@@ -88,12 +111,13 @@ void OptixManager::createContext() {
 
   cudaDeviceProp deviceProps;
   CUDA_CHECK(cudaGetDeviceProperties(&deviceProps, deviceID));
-  std::cout << "running on device: " << deviceProps.name << std::endl;
+
+  spdlog::info("running on device: {}", deviceProps.name);
 
   CUcontext cudaContext;
   CUresult  cuRes = cuCtxGetCurrent(&cudaContext);
   if (cuRes != CUDA_SUCCESS) {
-    std::cerr << "Error querying current context: error code " << cuRes << std::endl;
+    spdlog::error("Error querying current context: error code {}", cuRes);
   }
 
   OPTIX_CHECK(optixDeviceContextCreate(cudaContext, 0, &_optixContext));
@@ -101,7 +125,7 @@ void OptixManager::createContext() {
 }
 
 void OptixManager::createModule() {
-  std::cout << "setting up module ..." << std::endl;
+  spdlog::info("setting up module ...");
 
   OptixModuleCompileOptions moduleCompileOptions = {};
 
@@ -134,7 +158,7 @@ void OptixManager::createModule() {
 }
 
 void OptixManager::createRayGenProgramGroup() {
-  std::cout << "create raygen program group(s)" << std::endl;
+  spdlog::info("create raygen program group(s)");
   _raygenProgramGroups.resize(1);
 
   OptixProgramGroupOptions programGroupOptions = {};  // Initialize to zeros
@@ -157,7 +181,7 @@ void OptixManager::createRayGenProgramGroup() {
 }
 
 void OptixManager::createMissProgramGroup() {
-  std::cout << "create miss program group(s)" << std::endl;
+  spdlog::info("create miss program group(s)");
   _missProgramGroups.resize(1);
 
   OptixProgramGroupOptions programGroupOptions = {};  // Initialize to zeros
@@ -180,7 +204,7 @@ void OptixManager::createMissProgramGroup() {
 }
 
 void OptixManager::createHitProgramGroup() {
-  std::cout << "create hit program group(s)" << std::endl;
+  spdlog::info("create hit program group(s)");
   _hitProgramGroups.resize(1);
 
   OptixProgramGroupOptions programGroupOptions = {};  // Initialize to zeros
@@ -205,7 +229,7 @@ void OptixManager::createHitProgramGroup() {
 }
 
 void OptixManager::buildAccel() {
-  std::cout << "build acceleration structures ..." << std::endl;
+  spdlog::info("build acceleration structures ...");
   OptixTraversableHandle asHandle{0};
 
   size_t meshCount = _scene.meshes.size();
@@ -333,7 +357,7 @@ void OptixManager::buildAccel() {
 }
 
 void OptixManager::createPipeline() {
-  std::cout << "create pipeline ..." << std::endl;
+  spdlog::info("create pipeline ...");
 
   const uint32_t                 maxTraceDepth = 2;
   std::vector<OptixProgramGroup> programGroups;
@@ -383,7 +407,7 @@ void OptixManager::createPipeline() {
 }
 
 void OptixManager::createTextures() {
-  std::cout << "create textures ..." << std::endl;
+  spdlog::info("create textures ...");
 
   int numTextures = _scene.textures.size();
   _textureArrays.resize(numTextures);
@@ -436,7 +460,7 @@ void OptixManager::createTextures() {
 }
 
 void OptixManager::createShaderBindingTable() {
-  std::cout << "create shader binding table ..." << std::endl;
+  spdlog::info("create shader binding table ...");
   // ------------------------------------------------------------------
   // build raygen records
   // ------------------------------------------------------------------
@@ -497,7 +521,7 @@ void OptixManager::createShaderBindingTable() {
 }
 
 void OptixManager::launch() {
-  std::cout << "sample index: " << _launchParams.frame.sampleIndex << std::endl;
+  // std::cout << "sample index: " << _launchParams.frame.sampleIndex << std::endl;
 
   CUdeviceptr dParam;
   CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&dParam), sizeof(Params)));
@@ -610,7 +634,7 @@ void OptixManager::dolly(float offset) {
   }
 
   auto newPos = position + forward * _dollyZoomOffset;
-  std::cout << "dolly offset: " << _dollyZoomOffset << std::endl;
+  // std::cout << "dolly offset: " << _dollyZoomOffset << std::endl;
 
   _lastSetCamera->setPosition(newPos);
 

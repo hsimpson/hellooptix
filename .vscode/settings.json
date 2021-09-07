@@ -9,7 +9,11 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "cmake.debugConfig": {
-    "cwd": "${workspaceFolder}"
+    "cwd": "${workspaceFolder}",
+    "console": "externalTerminal"
+    // "console": "internalConsole"
+    // "console": "integratedTerminal"
+    // "externalConsole": true
   },
   "editor.formatOnSave": true,
   "editor.tabSize": 2,

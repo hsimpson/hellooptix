@@ -60,6 +60,7 @@ find_package(glad CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(tinyobjloader CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 
 
 find_path(STB_INCLUDE_DIRS "stb.h")
@@ -99,4 +100,6 @@ target_link_libraries( "${TARGET_NAME}"
   glfw
   glm::glm
   tinyobjloader::tinyobjloader
+  spdlog::spdlog
+  spdlog::spdlog_header_only
 )

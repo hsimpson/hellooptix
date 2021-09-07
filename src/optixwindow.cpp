@@ -2,6 +2,7 @@
 #include <chrono>
 #include <iostream>
 #include <format>
+#include "spdlog/spdlog.h"
 
 OptixWindow::OptixWindow(const std::string &title,
                          const Scene &      scene,
@@ -13,7 +14,7 @@ OptixWindow::OptixWindow(const std::string &title,
 }
 
 OptixWindow::~OptixWindow() {
-  //_optixManager->writeImage("./image.ppm");
+  // _optixManager->writeImage("./image.ppm");
 }
 
 void OptixWindow::resize(uint32_t width, uint32_t height) {
@@ -72,7 +73,7 @@ void OptixWindow::render() {
   auto t2       = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration<double, std::chrono::milliseconds::period>(t2 - t1).count();
 
-  // std::cout << std::format("Optix duration: {}ms\n", duration);
+  spdlog::debug("Optix duration: {:.3f} ms", duration);
 }
 
 void OptixWindow::dolly(float offset) {
