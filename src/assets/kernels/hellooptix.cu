@@ -175,7 +175,11 @@ extern "C" __global__ void __raygen__renderFrame() {
   const unsigned int ix = optixGetLaunchIndex().x;
   const unsigned int iy = optixGetLaunchIndex().y;
 
-  const auto& camera = optixLaunchParams.camera;
+  const auto&  camera = optixLaunchParams.camera;
+  const float3 eye    = camera.eye;
+  const float3 U      = camera.U;
+  const float3 V      = camera.V;
+  const float3 W      = camera.W;
 
   // normalized screen plane position, in [0,1]^2
   float2 screen = make_float2(ix + .5f, iy + .5f) / make_float2(optixLaunchParams.frame.size);
@@ -200,8 +204,8 @@ extern "C" __global__ void __raygen__renderFrame() {
                    1.0f;
 
   // generate ray direction
-  float3 rayDirection = normalize(d.x * camera.horizontal + d.y * camera.vertical + camera.direction);
-  float3 rayOrigin    = camera.position;
+  float3 rayDirection = normalize(d.x * U + d.y * V + W);
+  float3 rayOrigin    = eye;
 
   prd.emitted      = make_float3(0.0f, 0.0f, 0.0f);
   prd.radiance     = make_float3(0.0f, 0.0f, 0.0f);
@@ -255,12 +259,5 @@ extern "C" __global__ void __raygen__renderFrame() {
     accumColor                  = lerp(accumColorPrev, accumColor, a);
   }
   optixLaunchParams.frame.accumBuffer[imageIndex] = make_float4(accumColor, 1.0f);
-
-  // optixLaunchParams.frame.colorBuffer[imageIndex] = make_uchar4(
-  //     accumColor.x * 255u,
-  //     accumColor.y * 255u,
-  //     accumColor.z * 255u,
-  //     255u);
-
   optixLaunchParams.frame.colorBuffer[imageIndex] = make_color(accumColor);
 }

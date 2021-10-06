@@ -14,7 +14,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include "spdlog/spdlog.h"
 
-bool GltfLoader::load(const std::string& filename, Scene& scene) {
+bool GltfLoader::load(const std::string& filename, std::shared_ptr<Scene> scene) {
   tinygltf::Model    gltfModel;
   tinygltf::TinyGLTF loader;
   bool               ret = false;
@@ -44,10 +44,7 @@ bool GltfLoader::load(const std::string& filename, Scene& scene) {
   if (gltfModel.cameras.size() > 0) {
     const auto& camera = gltfModel.cameras[0];
     if (camera.type == "perspective") {
-      scene.camera = std::make_unique<Camera>(Camera(
-          camera.perspective.yfov,
-          camera.perspective.znear,
-          camera.perspective.zfar));
+      scene->camera->setFovY(glm::degrees(camera.perspective.yfov));
     }
   }
 
@@ -58,7 +55,7 @@ bool GltfLoader::load(const std::string& filename, Scene& scene) {
     tex.pixelData.resize(image.image.size());
     std::memcpy(tex.pixelData.data(), image.image.data(), image.image.size());
 
-    scene.textures.push_back(tex);
+    scene->textures.push_back(tex);
   }
 
   // only access first scene
@@ -71,10 +68,10 @@ bool GltfLoader::load(const std::string& filename, Scene& scene) {
       glm::quat cameraRotation = {1.0f, 0.0f, 0.0f, 0.0f};
       glm::quat sceneRotation  = {1.0f, 0.0f, 0.0f, 0.0f};
 
-      if (node.translation.size() == 3) {
-        scene.camera->setPosition({node.translation[0],
-                                   node.translation[1],
-                                   node.translation[2]});
+      if (node.translation.size() == 3 && scene->camera) {
+        scene->camera->setEye({node.translation[0],
+                               node.translation[1],
+                               node.translation[2]});
       }
 
       if (node.rotation.size() == 4) {
@@ -102,7 +99,9 @@ bool GltfLoader::load(const std::string& filename, Scene& scene) {
         }
       }
 
-      scene.camera->setRotation(cameraRotation * sceneRotation);
+      if (scene->camera) {
+        scene->camera->setRotation(cameraRotation * sceneRotation);
+      }
 
       continue;
     }
@@ -232,9 +231,9 @@ bool GltfLoader::load(const std::string& filename, Scene& scene) {
 
       triangleMesh.boundingBox.addPoints(triangleMesh.vertices);
 
-      scene.meshes.push_back(triangleMesh);
+      scene->meshes.push_back(triangleMesh);
 
-      scene.boundingBox.addBox(triangleMesh.boundingBox);
+      scene->boundingBox.addBox(triangleMesh.boundingBox);
     }
   }
 

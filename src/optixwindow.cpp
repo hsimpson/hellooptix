@@ -4,21 +4,26 @@
 #include <format>
 #include "spdlog/spdlog.h"
 
-OptixWindow::OptixWindow(const std::string &title,
-                         const Scene &      scene,
-                         uint32_t           width,
-                         uint32_t           height)
-    : GLFWindow(title, width, height) {
+OptixWindow::OptixWindow(const std::string&                title,
+                         std::shared_ptr<Scene>            scene,
+                         std::shared_ptr<CameraController> cameraController,
+                         uint32_t                          width,
+                         uint32_t                          height)
+    : GLFWindow(title, width, height),
+      _width(width),
+      _height(height),
+      _cameraController(cameraController) {
   _optixManager = std::make_unique<OptixManager>(scene, width, height);
-  _optixManager->setCamera(scene.camera);
+
+  glfwSetFramebufferSizeCallback(_windowHandle, OptixWindow::framebufferResizeCallback);
+  glfwSetScrollCallback(_windowHandle, OptixWindow::scrollCallback);
+  glfwSetCursorPosCallback(_windowHandle, OptixWindow::cursorPosCallback);
+  glfwSetMouseButtonCallback(_windowHandle, OptixWindow::mouseButtonCallback);
+  glfwSetKeyCallback(_windowHandle, OptixWindow::keyCallback);
 }
 
 OptixWindow::~OptixWindow() {
   // _optixManager->writeImage("./image.ppm");
-}
-
-void OptixWindow::resize(uint32_t width, uint32_t height) {
-  _optixManager->resize(width, height);
 }
 
 void OptixWindow::draw() {
@@ -76,18 +81,43 @@ void OptixWindow::render() {
   spdlog::debug("Optix duration: {:.3f} ms", duration);
 }
 
-void OptixWindow::dolly(float offset) {
-  _optixManager->dolly(offset);
+void OptixWindow::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+  auto w     = static_cast<OptixWindow*>(glfwGetWindowUserPointer(window));
+  w->_width  = width;
+  w->_height = height;
+  w->_cameraController->resize(width, height);
+  w->_optixManager->resize(width, height);
 }
 
-void OptixWindow::move(float offsetX, float offsetY) {
-  _optixManager->move(offsetX, offsetY);
+void OptixWindow::scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+  auto w = static_cast<OptixWindow*>(glfwGetWindowUserPointer(window));
+  w->_cameraController->zoom(static_cast<float>(yoffset));
 }
 
-void OptixWindow::moveLookAt(float offsetX, float offsetY) {
-  _optixManager->moveLookAt(offsetX, offsetY);
+void OptixWindow::cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
+  auto w = static_cast<OptixWindow*>(glfwGetWindowUserPointer(window));
+
+  if (w->_mouseButton == GLFW_MOUSE_BUTTON_LEFT) {
+    w->_cameraController->rotate({static_cast<int32_t>(xpos), static_cast<int32_t>(ypos)});
+  } else if (w->_mouseButton == GLFW_MOUSE_BUTTON_RIGHT) {
+    w->_cameraController->pan({static_cast<int32_t>(xpos), static_cast<int32_t>(ypos)});
+  }
 }
 
-void OptixWindow::rotate(float pitch, float yaw, float roll) {
-  _optixManager->rotate(pitch, yaw, roll);
+void OptixWindow::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+  auto w = static_cast<OptixWindow*>(glfwGetWindowUserPointer(window));
+
+  double xpos, ypos;
+  glfwGetCursorPos(window, &xpos, &ypos);
+
+  w->_cameraController->setMousePosition({static_cast<int32_t>(xpos), static_cast<int32_t>(ypos)});
+  if (action == GLFW_PRESS) {
+    w->_mouseButton = button;
+  } else {
+    w->_mouseButton = -1;
+  }
+}
+
+void OptixWindow::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+  auto w = static_cast<OptixWindow*>(glfwGetWindowUserPointer(window));
 }

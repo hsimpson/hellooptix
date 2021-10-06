@@ -1,7 +1,7 @@
 #pragma once
 
 __forceinline__ __device__ float3 toSRGB(const float3& c) {
-  float  invGamma = 1.0f / 2.4f;
+  float  invGamma = 1.0f / 2.2f;
   float3 powed    = make_float3(powf(c.x, invGamma), powf(c.y, invGamma), powf(c.z, invGamma));
   return make_float3(
       c.x < 0.0031308f ? 12.92f * c.x : 1.055f * powed.x - 0.055f,

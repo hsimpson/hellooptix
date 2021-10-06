@@ -9,7 +9,7 @@ project(hellooptix
 
 # put this in an early stage to work
 # 23 --> -std:c++latest
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 
 # include(CTest)
 # enable_testing()
@@ -17,6 +17,8 @@ set(CMAKE_CXX_STANDARD 23)
 add_executable(hellooptix
   ./src/main.cpp
   ./src/camera.cpp
+  ./src/cameraController.cpp
+  ./src/trackballController.cpp
   ./src/optixmanager.cpp
   ./src/program.cpp
   ./src/glfwindow.cpp

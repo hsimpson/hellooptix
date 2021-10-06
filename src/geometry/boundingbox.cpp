@@ -26,7 +26,7 @@ void BoundingBox::addBox(const BoundingBox &box) {
   if (box.max.z > max.z) max.z = box.max.z;
 }
 
-const glm::vec3 &BoundingBox::size() const {
+const glm::vec3 BoundingBox::size() const {
   return max - min;
 }
 

@@ -19,6 +19,7 @@
   "editor.tabSize": 2,
   "files.associations": {
     "*.fx": "glsl",
+    ".env": "env",
     "format": "cpp",
     "deque": "cpp",
     "forward_list": "cpp",
@@ -105,7 +106,9 @@
     "xtr1common": "cpp",
     "__nullptr": "cpp",
     "__bit_reference": "cpp",
-    "set": "cpp"
+    "set": "cpp",
+    "condition_variable": "cpp",
+    "__string": "cpp"
   },
   "C_Cpp.errorSquiggles": "Disabled"
 }

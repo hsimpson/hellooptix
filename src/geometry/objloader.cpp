@@ -60,7 +60,7 @@ int ObjLoader::addVertex(TriangleMesh&                    triangleMesh,
   return newID;
 }
 
-int ObjLoader::loadTexture(Scene& scene, std::map<std::string, int>& knownTextures, const std::string& filename) {
+int ObjLoader::loadTexture(std::shared_ptr<Scene> scene, std::map<std::string, int>& knownTextures, const std::string& filename) {
   if (knownTextures.find(filename) != knownTextures.end())
     return knownTextures[filename];
 
@@ -75,7 +75,7 @@ int ObjLoader::loadTexture(Scene& scene, std::map<std::string, int>& knownTextur
 
   int textureID = -1;
   if (imageData) {
-    textureID = scene.textures.size();
+    textureID = scene->textures.size();
     Texture texture;
     texture.resolution      = glm::uvec2(resolutionX, resolutionY);
     const unsigned int size = resolutionX * resolutionY * components;
@@ -85,13 +85,13 @@ int ObjLoader::loadTexture(Scene& scene, std::map<std::string, int>& knownTextur
 
     free(imageData);
 
-    scene.textures.push_back(texture);
+    scene->textures.push_back(texture);
   }
   knownTextures[filename] = textureID;
   return textureID;
 }
 
-bool ObjLoader::load(const std::string& filename, Scene& scene) {
+bool ObjLoader::load(const std::string& filename, std::shared_ptr<Scene> scene) {
   // get parent directory of obj file
   std::filesystem::path path(filename);
   auto                  basePath = path.parent_path();
@@ -152,8 +152,8 @@ bool ObjLoader::load(const std::string& filename, Scene& scene) {
       }
 
       triangleMesh.boundingBox.addPoints(triangleMesh.vertices);
-      scene.meshes.push_back(triangleMesh);
-      scene.boundingBox.addBox(triangleMesh.boundingBox);
+      scene->meshes.push_back(triangleMesh);
+      scene->boundingBox.addBox(triangleMesh.boundingBox);
     }
   }
 

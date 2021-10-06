@@ -9,10 +9,10 @@ struct Params {
   } frame;
 
   struct {
-    float3 position;
-    float3 direction;
-    float3 horizontal;
-    float3 vertical;
+    float3 eye;
+    float3 U;
+    float3 V;
+    float3 W;
   } camera;
 
   OptixTraversableHandle traversable;

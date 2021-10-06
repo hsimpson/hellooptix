@@ -10,6 +10,7 @@
 #include <format>
 #include <fstream>
 #include "spdlog/spdlog.h"
+#include "trackballController.h"
 
 static void contextLogCallback(unsigned int level,
                                const char*  tag,
@@ -38,10 +39,12 @@ static void contextLogCallback(unsigned int level,
   }
 }
 
-OptixManager::OptixManager(const Scene& scene,
-                           uint32_t     width,
-                           uint32_t     height)
-    : _width(width), _height(height), _scene(scene) {
+OptixManager::OptixManager(std::shared_ptr<Scene> scene,
+                           uint32_t               width,
+                           uint32_t               height)
+    : _scene(scene),
+      _width(width),
+      _height(height) {
   initOptix();
   createContext();
   createModule();
@@ -232,7 +235,7 @@ void OptixManager::buildAccel() {
   spdlog::info("build acceleration structures ...");
   OptixTraversableHandle asHandle{0};
 
-  size_t meshCount = _scene.meshes.size();
+  size_t meshCount = _scene->meshes.size();
 
   _vertexBuffer.resize(meshCount);
   _normalBuffer.resize(meshCount);
@@ -246,7 +249,7 @@ void OptixManager::buildAccel() {
 
   for (int meshID = 0; meshID < meshCount; meshID++) {
     // upload the model to the device: the builder
-    auto& mesh = _scene.meshes[meshID];
+    auto& mesh = _scene->meshes[meshID];
     _vertexBuffer[meshID].alloc_and_upload(mesh.vertices);
     _indexBuffer[meshID].alloc_and_upload(mesh.indices);
     if (!mesh.normals.empty())
@@ -409,12 +412,12 @@ void OptixManager::createPipeline() {
 void OptixManager::createTextures() {
   spdlog::info("create textures ...");
 
-  int numTextures = _scene.textures.size();
+  int numTextures = _scene->textures.size();
   _textureArrays.resize(numTextures);
   _textureObjects.resize(numTextures);
 
   for (int textureID = 0; textureID < numTextures; textureID++) {
-    const auto& texture = _scene.textures[textureID];
+    const auto& texture = _scene->textures[textureID];
 
     cudaResourceDesc res_desc = {};
 
@@ -492,13 +495,13 @@ void OptixManager::createShaderBindingTable() {
   // ------------------------------------------------------------------
   // build hitgroup records
   // ------------------------------------------------------------------
-  int                         numObjects = (int)_scene.meshes.size();
+  int                         numObjects = (int)_scene->meshes.size();
   std::vector<HitgroupRecord> hitgroupRecords;
   for (int meshID = 0; meshID < numObjects; meshID++) {
     HitgroupRecord rec;
     // all meshes use the same code, so all same hit group
     OPTIX_CHECK(optixSbtRecordPackHeader(_hitProgramGroups[0], &rec));
-    auto& mesh        = _scene.meshes[meshID];
+    auto& mesh        = _scene->meshes[meshID];
     auto  color       = mesh.color;
     rec.data.color    = make_float3(color.r, color.g, color.b);
     rec.data.vertex   = (float3*)_vertexBuffer[meshID].d_pointer();
@@ -522,6 +525,8 @@ void OptixManager::createShaderBindingTable() {
 
 void OptixManager::launch() {
   // std::cout << "sample index: " << _launchParams.frame.sampleIndex << std::endl;
+
+  updateCamera();
 
   CUdeviceptr dParam;
   CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&dParam), sizeof(Params)));
@@ -569,8 +574,21 @@ void OptixManager::resize(uint32_t width, uint32_t height) {
   _launchParams.frame.accumBuffer = _accumBuffer->map();
 
   _launchParams.frame.size = make_uint2(_width, _height);
+}
 
-  setCamera(_lastSetCamera);
+void OptixManager::updateCamera() {
+  if (!_scene->camera->needsUpdate())
+    return;
+
+  _scene->camera->setNeedsUpdate(false);
+
+  _launchParams.frame.sampleIndex = 0;
+  _launchParams.camera.eye        = vec3ToFloat3(_scene->camera->eye());
+  glm::vec3 U, V, W;
+  _scene->camera->getUVW(U, V, W);
+  _launchParams.camera.U = vec3ToFloat3(U);
+  _launchParams.camera.V = vec3ToFloat3(V);
+  _launchParams.camera.W = vec3ToFloat3(W);
 }
 
 void OptixManager::writeImage(const std::string& imagePath) {
@@ -599,63 +617,4 @@ void OptixManager::writeImage(const std::string& imagePath) {
     ofStream << ss.rdbuf();
     ofStream.close();
   }
-}
-
-void OptixManager::setCamera(const std::shared_ptr<Camera>& camera) {
-  _lastSetCamera                  = camera;
-  _launchParams.frame.sampleIndex = 0;
-
-  // _launchParams.camera.position  = make_float3(camera->positon.x, camera->positon.y, camera->positon.z);
-  _launchParams.camera.position  = vec3ToFloat3(camera->position());
-  auto direction                 = glm::normalize(camera->forward() * -1.0f);
-  _launchParams.camera.direction = vec3ToFloat3(direction);
-
-  const float aspect = float(_launchParams.frame.size.x) / float(_launchParams.frame.size.y);
-
-  auto horizontal = camera->fovY() * aspect * glm::normalize(glm::cross(direction, camera->up()));
-  auto vertical   = camera->fovY() * glm::normalize(glm::cross(horizontal, direction));
-
-  _launchParams.camera.horizontal = vec3ToFloat3(horizontal);
-  _launchParams.camera.vertical   = vec3ToFloat3(vertical);
-}
-
-void OptixManager::dolly(float offset) {
-  auto forward  = _lastSetCamera->forward();
-  auto position = _lastSetCamera->position();
-
-  float dollySpeed = 0.01f * _scene.boundingBox.radius();
-
-  if (offset > 0.0f) {
-    _dollyZoomOffset += dollySpeed;
-    _dollyZoomOffset = std::abs(_dollyZoomOffset);
-  } else {
-    _dollyZoomOffset -= dollySpeed;
-    _dollyZoomOffset = -std::abs(_dollyZoomOffset);
-  }
-
-  auto newPos = position + forward * _dollyZoomOffset;
-  // std::cout << "dolly offset: " << _dollyZoomOffset << std::endl;
-
-  _lastSetCamera->setPosition(newPos);
-
-  setCamera(_lastSetCamera);
-}
-
-void OptixManager::move(float offsetX, float offsetY) {
-  auto position = _lastSetCamera->position();
-  auto newPos   = position + _lastSetCamera->right() * offsetX + _lastSetCamera->up() * offsetY;
-  _lastSetCamera->setPosition(newPos);
-
-  setCamera(_lastSetCamera);
-}
-
-void OptixManager::moveLookAt(float offsetX, float offsetY) {
-  // _lastSetCamera->lookAt.x += offsetX;
-  // _lastSetCamera->lookAt.y += offsetY;
-  // setCamera(_lastSetCamera);
-}
-
-void OptixManager::rotate(float pitch, float yaw, float roll) {
-  _lastSetCamera->rotate(pitch, yaw, roll);
-  setCamera(_lastSetCamera);
 }

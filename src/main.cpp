@@ -4,6 +4,7 @@
 #include "geometry/gltfloader.h"
 #include "geometry/objloader.h"
 #include "camera.h"
+#include "trackballController.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/stopwatch.h"
 
@@ -20,8 +21,16 @@ int main() {
 
   spdlog::set_level(spdlog::level::debug);  // Set global log level to debug
 
-  spdlog::stopwatch sw;
-  Scene             scene;
+  spdlog::stopwatch       sw;
+  std::shared_ptr<Scene>  scene  = std::make_shared<Scene>();
+  std::shared_ptr<Camera> camera = std::make_shared<Camera>();
+  scene->camera                  = camera;
+
+  // default camera parameters
+  constexpr uint32_t width  = 1280;
+  constexpr uint32_t height = 720;
+  camera->setSize({width, height});
+  camera->setEye({0.0f, 0.0f, 5.0f});
 
   GltfLoader gltfLoader;
   ObjLoader  objLoader;
@@ -41,13 +50,9 @@ int main() {
 
   spdlog::debug("Duration scene loading: {:.3} s", sw);
 
-  if (!scene.camera) {
-    scene.camera = std::make_shared<Camera>(Camera(0.30f, 0.1f, 1000.0f));
-  }
-
-  constexpr int width  = 1920;
-  constexpr int height = 1080;
-  OptixWindow   optixWindow("Hello Optix!", scene, width, height);
+  std::shared_ptr<TrackballController> trackballController =
+      std::make_shared<TrackballController>(camera);
+  OptixWindow optixWindow("Hello Optix!", scene, trackballController, width, height);
   optixWindow.run();
 
   return 0;

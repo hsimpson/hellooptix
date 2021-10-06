@@ -7,13 +7,13 @@
 #include "optixtypes.h"
 #include "camera.h"
 #include "geometry/trianglemesh.h"
-#include "camera.h"
+#include "cameraController.h"
 
 class OptixManager {
  public:
-  OptixManager(const Scene& scene,
-               uint32_t     width,
-               uint32_t     height);
+  OptixManager(std::shared_ptr<Scene> scene,
+               uint32_t               width,
+               uint32_t               height);
   ~OptixManager();
 
   void                      launch();
@@ -22,12 +22,6 @@ class OptixManager {
   CUDAOutputBuffer<uchar4>* getOutputBuffer() {
     return _outputBuffer;
   }
-
-  void setCamera(const std::shared_ptr<Camera>& camera);
-  void dolly(float offset);
-  void move(float offsetX, float offsetY);
-  void moveLookAt(float offsetX, float offsetY);
-  void rotate(float pitch, float yaw, float roll = 0.0f);
 
  private:
   void initOptix();
@@ -40,6 +34,8 @@ class OptixManager {
   void createPipeline();
   void createTextures();
   void createShaderBindingTable();
+
+  void updateCamera();
 
   uint32_t _width           = 0;
   uint32_t _height          = 0;
@@ -66,8 +62,7 @@ class OptixManager {
   CUDAOutputBuffer<float4>* _accumBuffer  = nullptr;
   Params                    _launchParams;
 
-  const Scene&            _scene;
-  std::shared_ptr<Camera> _lastSetCamera;
+  std::shared_ptr<Scene> _scene;
 
   // one buffer per input mesh
   std::vector<CUDABuffer> _vertexBuffer;
