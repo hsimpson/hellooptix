@@ -29,13 +29,15 @@ void TrackballController::rotate(const glm::ivec2& mousePosition) {
   glm::vec3 moveDirection{mouseDelta.x, mouseDelta.y, 0.0f};
   _angle = glm::length(moveDirection);
 
-  if (_angle) {
-    glm::vec3 eye    = _camera->eye();
-    glm::vec3 lookAt = _camera->lookAt();
+  glm::vec3 eye    = _camera->eye();
+  glm::vec3 lookAt = _camera->lookAt();
 
-    eye                     = eye - lookAt;
-    glm::vec3 eyeDirection  = glm::normalize(eye);
-    glm::vec3 upDirection   = glm::normalize(_cameraUp);
+  if (_angle) {
+    eye = eye - lookAt;
+
+    glm::vec3 eyeDirection = glm::normalize(eye);
+    // glm::vec3 upDirection   = glm::normalize(_cameraUp);
+    glm::vec3 upDirection   = {0.0f, 1.0f, 0.0f};
     glm::vec3 sideDirection = glm::normalize(glm::cross(upDirection, eyeDirection));
 
     upDirection   = upDirection * static_cast<float>(-mouseDelta.y);
@@ -47,26 +49,39 @@ void TrackballController::rotate(const glm::ivec2& mousePosition) {
 
     glm::quat quaternion = glm::angleAxis(_angle, _axis);
 
-    eye       = glm::rotate(quaternion, eye);
-    _cameraUp = glm::rotate(quaternion, _cameraUp);
+    eye          = glm::rotate(quaternion, eye);
+    _cameraRight = glm::rotate(quaternion, _cameraRight);
+    _cameraUp    = glm::rotate(quaternion, _cameraUp);
 
     _camera->setEye(eye);
   } else {
     spdlog::debug("TrackballController::rotate: angle is zero");
 
-    glm::vec3 eye    = _camera->eye();
-    glm::vec3 lookAt = _camera->lookAt();
-
     eye                  = eye - lookAt;
     glm::quat quaternion = glm::angleAxis(_angle, _axis);
     eye                  = glm::rotate(quaternion, eye);
+    _cameraRight         = glm::rotate(quaternion, _cameraRight);
     _cameraUp            = glm::rotate(quaternion, _cameraUp);
   }
+
+  // _camera->setEye(eye);
 }
 
 void TrackballController::pan(const glm::ivec2& mousePosition) {
   glm::ivec2 mouseDelta = mousePosition - _mousePosition;
   _mousePosition        = mousePosition;
+
+  glm::vec3 eye    = _camera->eye();
+  glm::vec3 lookAt = _camera->lookAt();
+
+  eye -= _cameraRight * static_cast<float>(mouseDelta.x) * _panFactor;
+  lookAt -= _cameraRight * static_cast<float>(mouseDelta.x) * _panFactor;
+
+  eye += _cameraUp * static_cast<float>(mouseDelta.y) * _panFactor;
+  lookAt += _cameraUp * static_cast<float>(mouseDelta.y) * _panFactor;
+
+  _camera->setEye(eye);
+  _camera->setLookAt(lookAt);
 
   spdlog::debug("TrackballController::pan: {},{}", mouseDelta.x, mouseDelta.y);
 }

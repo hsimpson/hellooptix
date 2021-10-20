@@ -16,7 +16,8 @@ class TrackballController : public CameraController {
   const float _rotationFactor = 0.001f;
   const float _panFactor      = 0.005f;
   float       _cameraEyeLookAtDistance;
-  glm::vec3   _cameraUp = {0.0f, 1.0f, 0.0f};
-  glm::vec3   _axis     = {0.0f, 0.0f, 0.0f};
-  float       _angle    = 0.0f;
+  glm::vec3   _cameraUp    = {0.0f, 1.0f, 0.0f};
+  glm::vec3   _cameraRight = {1.0f, 0.0f, 0.0f};
+  glm::vec3   _axis        = {0.0f, 0.0f, 0.0f};
+  float       _angle       = 0.0f;
 };
