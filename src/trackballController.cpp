@@ -21,67 +21,65 @@ void TrackballController::resize(uint32_t width, uint32_t height) {
                     static_cast<float>(height)});
 }
 
-void TrackballController::rotate(const glm::ivec2& mousePosition) {
-  glm::ivec2 mouseDelta = mousePosition - _mousePosition;
-  _mousePosition        = mousePosition;
-  spdlog::debug("TrackballController::rotate: {},{}", mouseDelta.x, mouseDelta.y);
-
-  glm::vec3 moveDirection{mouseDelta.x, mouseDelta.y, 0.0f};
-  _angle = glm::length(moveDirection);
-
-  glm::vec3 eye    = _camera->eye();
-  glm::vec3 lookAt = _camera->lookAt();
-
-  if (_angle) {
-    eye = eye - lookAt;
-
-    glm::vec3 eyeDirection = glm::normalize(eye);
-    // glm::vec3 upDirection   = glm::normalize(_cameraUp);
-    glm::vec3 upDirection   = {0.0f, 1.0f, 0.0f};
-    glm::vec3 sideDirection = glm::normalize(glm::cross(upDirection, eyeDirection));
-
-    upDirection   = upDirection * static_cast<float>(-mouseDelta.y);
-    sideDirection = sideDirection * static_cast<float>(mouseDelta.x);
-    moveDirection = upDirection + sideDirection;
-    _axis         = glm::normalize(glm::cross(moveDirection, eye));
-
-    _angle *= _rotationFactor;
-
-    glm::quat quaternion = glm::angleAxis(_angle, _axis);
-
-    eye          = glm::rotate(quaternion, eye);
-    _cameraRight = glm::rotate(quaternion, _cameraRight);
-    _cameraUp    = glm::rotate(quaternion, _cameraUp);
-
-    _camera->setEye(eye);
-  } else {
-    spdlog::debug("TrackballController::rotate: angle is zero");
-
-    eye                  = eye - lookAt;
-    glm::quat quaternion = glm::angleAxis(_angle, _axis);
-    eye                  = glm::rotate(quaternion, eye);
-    _cameraRight         = glm::rotate(quaternion, _cameraRight);
-    _cameraUp            = glm::rotate(quaternion, _cameraUp);
+void TrackballController::updateTracking(const glm::ivec2& mousePosition) {
+  if (!_performTracking) {
+    startTracking(mousePosition);
+    return;
   }
 
-  // _camera->setEye(eye);
+  glm::vec2 mouseDelta = (mousePosition - _mousePosition);
+  mouseDelta *= _trackBallFactor;
+  _mousePosition = mousePosition;
+
+  spdlog::debug("TrackballController::updateTracking: {},{}", mouseDelta.x, mouseDelta.y);
+
+  _latitude  = glm::radians(std::min(89.0f, std::max(-89.0f, glm::degrees(_latitude) + 0.5f * mouseDelta.y)));
+  _longitude = glm::radians(std::fmod(glm::degrees(_longitude) - 0.5f * mouseDelta.x, 360.0f));
+
+  updateCamera();
+  if (!_gimbalLock) {
+    reinitOrientationFromCamera();
+    _camera->setUp(_w);
+  }
 }
 
-void TrackballController::pan(const glm::ivec2& mousePosition) {
-  glm::ivec2 mouseDelta = mousePosition - _mousePosition;
-  _mousePosition        = mousePosition;
+void TrackballController::updateCamera() {
+  glm::vec3 localDir;
+  localDir.x = std::cos(_latitude) * std::sin(_longitude);
+  localDir.y = std::cos(_latitude) * std::cos(_longitude);
+  localDir.z = std::sin(_latitude);
 
-  glm::vec3 eye    = _camera->eye();
-  glm::vec3 lookAt = _camera->lookAt();
+  glm::vec3 dirWS = _u * localDir.x + _v * localDir.y + _w * localDir.z;
+  if (_viewMode == EyeFixed) {
+    const glm::vec3 eye = _camera->eye();
+    _camera->setLookAt(eye - dirWS * _cameraEyeLookAtDistance);
+  } else {
+    const glm::vec3 lookAt = _camera->lookAt();
+    _camera->setEye(lookAt + dirWS * _cameraEyeLookAtDistance);
+  }
+}
 
-  eye -= _cameraRight * static_cast<float>(mouseDelta.x) * _panFactor;
-  lookAt -= _cameraRight * static_cast<float>(mouseDelta.x) * _panFactor;
+void TrackballController::setReferenceFrame(const glm::vec3& u, const glm::vec3& v, const glm::vec3& w) {
+  _u = u;
+  _v = v;
+  _w = w;
 
-  eye += _cameraUp * static_cast<float>(mouseDelta.y) * _panFactor;
-  lookAt += _cameraUp * static_cast<float>(mouseDelta.y) * _panFactor;
+  glm::vec3 dirWS = -glm::normalize(_camera->lookAt() - _camera->eye());
+  glm::vec3 dirLocal;
+  dirLocal.x = glm::dot(dirWS, _u);
+  dirLocal.y = glm::dot(dirWS, _v);
+  dirLocal.z = glm::dot(dirWS, _w);
+  _longitude = std::atan2(dirLocal.x, dirLocal.y);
+  _latitude  = std::asin(dirLocal.z);
+}
 
-  _camera->setEye(eye);
-  _camera->setLookAt(lookAt);
-
-  spdlog::debug("TrackballController::pan: {},{}", mouseDelta.x, mouseDelta.y);
+void TrackballController::reinitOrientationFromCamera() {
+  _camera->getUVW(_u, _v, _w);
+  _u = glm::normalize(_u);
+  _v = glm::normalize(_v);
+  _w = glm::normalize(_w);
+  std::swap(_v, _w);
+  _latitude                = 0.0f;
+  _longitude               = 0.0f;
+  _cameraEyeLookAtDistance = glm::length(_camera->lookAt() - _camera->eye());
 }

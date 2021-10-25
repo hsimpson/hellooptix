@@ -98,9 +98,11 @@ void OptixWindow::cursorPosCallback(GLFWwindow* window, double xpos, double ypos
   auto w = static_cast<OptixWindow*>(glfwGetWindowUserPointer(window));
 
   if (w->_mouseButton == GLFW_MOUSE_BUTTON_LEFT) {
-    w->_cameraController->rotate({static_cast<int32_t>(xpos), static_cast<int32_t>(ypos)});
+    w->_cameraController->setViewMode(CameraController::LookAtFixed);
+    w->_cameraController->updateTracking({static_cast<int32_t>(xpos), static_cast<int32_t>(ypos)});
   } else if (w->_mouseButton == GLFW_MOUSE_BUTTON_RIGHT) {
-    w->_cameraController->pan({static_cast<int32_t>(xpos), static_cast<int32_t>(ypos)});
+    w->_cameraController->setViewMode(CameraController::EyeFixed);
+    w->_cameraController->updateTracking({static_cast<int32_t>(xpos), static_cast<int32_t>(ypos)});
   }
 }
 
@@ -110,9 +112,9 @@ void OptixWindow::mouseButtonCallback(GLFWwindow* window, int button, int action
   double xpos, ypos;
   glfwGetCursorPos(window, &xpos, &ypos);
 
-  w->_cameraController->setMousePosition({static_cast<int32_t>(xpos), static_cast<int32_t>(ypos)});
   if (action == GLFW_PRESS) {
     w->_mouseButton = button;
+    w->_cameraController->startTracking({static_cast<int32_t>(xpos), static_cast<int32_t>(ypos)});
   } else {
     w->_mouseButton = -1;
   }

@@ -55,7 +55,7 @@ void Camera::setFovY(float fovY) {
 void Camera::getUVW(glm::vec3 &U, glm::vec3 &V, glm::vec3 &W) const {
   W          = _lookAt - _eye;
   float wlen = glm::length(W);
-  U          = glm::normalize(glm::cross(W, {0.0f, 1.0f, 0.0f}));
+  U          = glm::normalize(glm::cross(W, _up));
   V          = glm::normalize(glm::cross(U, W));
   float vlen = wlen * std::tan(glm::radians(_fovY) / 2.0f);
   V *= vlen;
@@ -80,10 +80,17 @@ void Camera::setEye(const glm::vec3 &eye) {
   _needsUpdate = true;
   _eye         = eye;
 }
+
 void Camera::setLookAt(const glm::vec3 &lookAt) {
   _needsUpdate = true;
   _lookAt      = lookAt;
 }
+
+void Camera::setUp(const glm::vec3 &up) {
+  _needsUpdate = true;
+  _up          = up;
+}
+
 void Camera::setRotation(const glm::quat &rotation) {
   _needsUpdate = true;
   _rotation    = rotation;

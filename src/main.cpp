@@ -31,6 +31,8 @@ int main() {
   constexpr uint32_t height = 720;
   camera->setSize({width, height});
   camera->setEye({0.0f, 0.0f, 5.0f});
+  camera->setLookAt({0.0f, 0.0f, 0.0f});
+  camera->setUp({0.0f, 1.0f, 0.0f});
 
   GltfLoader gltfLoader;
   ObjLoader  objLoader;
@@ -52,6 +54,11 @@ int main() {
 
   std::shared_ptr<TrackballController> trackballController =
       std::make_shared<TrackballController>(camera);
+  trackballController->setReferenceFrame(
+      {1.0f, 0.0f, 0.0f},
+      {0.0f, 0.0f, 1.0f},
+      {0.0f, 1.0f, 0.0f});
+  trackballController->setGimbalLock(true);
   OptixWindow optixWindow("Hello Optix!", scene, trackballController, width, height);
   optixWindow.run();
 

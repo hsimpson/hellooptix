@@ -14,6 +14,9 @@ class Camera {
   const glm::vec3 &lookAt() const { return _lookAt; }
   void             setLookAt(const glm::vec3 &lookAt);
 
+  const glm::vec3 &up() const { return _up; }
+  void             setUp(const glm::vec3 &up);
+
   const glm::quat &rotation() const { return _rotation; }
   void             setRotation(const glm::quat &rotation);
 
@@ -37,6 +40,7 @@ class Camera {
 
   glm::vec3   _eye          = {0.0f, 0.0f, 0.0f};          // camera position
   glm::vec3   _lookAt       = {0.0f, 0.0f, 0.0f};          // look at point
+  glm::vec3   _up           = {0.0f, 1.0f, 0.0f};          // camera up vector
   glm::quat   _rotation     = glm::identity<glm::quat>();  // camera rotation
   float       _focalLength  = 50.0f;                       // camera focal length (mm)
   float       _aspectRatio  = 1.0;                         // camera aspect ratio
