@@ -53,7 +53,7 @@ int main() {
   spdlog::debug("Duration scene loading: {:.3} s", sw);
 
   std::shared_ptr<TrackballController> trackballController =
-      std::make_shared<TrackballController>(camera);
+      std::make_shared<TrackballController>(camera, scene->boundingBox.radius());
   trackballController->setReferenceFrame(
       {1.0f, 0.0f, 0.0f},
       {0.0f, 0.0f, 1.0f},

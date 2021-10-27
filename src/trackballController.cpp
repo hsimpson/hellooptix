@@ -1,8 +1,10 @@
 #include "trackballController.h"
 #include "spdlog/spdlog.h"
 
-TrackballController::TrackballController(std::shared_ptr<Camera> camera) : CameraController(camera) {
+TrackballController::TrackballController(std::shared_ptr<Camera> camera, float boundingRadius) : CameraController(camera) {
   _cameraEyeLookAtDistance = glm::length(_camera->lookAt() - _camera->eye());
+
+  // _zoomFactor = 1.0f * boundingRadius;
 }
 
 TrackballController::~TrackballController() {
@@ -11,6 +13,7 @@ TrackballController::~TrackballController() {
 void TrackballController::zoom(float delta) {
   float zoom = delta > 0.0f ? 1.0f / _zoomFactor : _zoomFactor;
   _cameraEyeLookAtDistance *= zoom;
+  spdlog::debug("Camera eye look at distance: {}", _cameraEyeLookAtDistance);
   glm::vec3 eye    = _camera->eye();
   glm::vec3 lookAt = _camera->lookAt();
   _camera->setEye(lookAt + (eye - lookAt) * zoom);

@@ -3,7 +3,7 @@
 
 class TrackballController : public CameraController {
  public:
-  TrackballController(std::shared_ptr<Camera> camera);
+  TrackballController(std::shared_ptr<Camera> camera, float boundingRadius);
   ~TrackballController() override;
 
   void setReferenceFrame(const glm::vec3& u, const glm::vec3& v, const glm::vec3& w);
@@ -17,7 +17,7 @@ class TrackballController : public CameraController {
   void updateCamera();
 
   bool        _gimbalLock      = false;
-  const float _zoomFactor      = 1.2f;
+  float       _zoomFactor      = 1.2f;
   const float _trackBallFactor = 0.1f;
   float       _cameraEyeLookAtDistance;
 
